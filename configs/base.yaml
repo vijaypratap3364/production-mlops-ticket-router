@@ -1,0 +1,23 @@
+global_random_seed: 42
+
+dataset:
+  repository: Tobi-Bueck/customer-support-tickets
+  revision: ddf1c81a5475992c4fa6752bf1e8b4e31f07bbeb
+  language_filter: en
+  target_column: queue
+  text_columns:
+    - subject
+    - body
+  number_of_target_queues: 10
+  # Provisional policy value. Confirm against the Stage 2 class-support profile.
+  minimum_class_count: 100
+
+split_ratios:
+  train: 0.70
+  validation: 0.15
+  test: 0.15
+
+mlflow:
+  tracking_uri: http://127.0.0.1:5000
+  model_name: ticket-router
+
