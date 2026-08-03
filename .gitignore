@@ -26,6 +26,7 @@ wheelhouse/
 
 # Test, coverage, lint, and type-check caches
 .pytest_cache/
+.pytest-tmp/
 .mypy_cache/
 .ruff_cache/
 .hypothesis/
@@ -102,4 +103,3 @@ outputs/
 # Local overrides
 compose.override.yaml
 docker-compose.override.yml
-

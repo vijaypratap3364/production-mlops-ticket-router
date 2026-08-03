@@ -85,9 +85,11 @@ plugins = ["pydantic.mypy"]
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests"]
+cache_dir = ".pytest-tmp/cache"
 addopts = [
   "--strict-config",
   "--strict-markers",
+  "--basetemp=.pytest-tmp",
   "--cov=ticket_router",
   "--cov-branch",
   "--cov-report=term-missing",
@@ -109,4 +111,3 @@ exclude_also = [
   "if TYPE_CHECKING:",
   "if __name__ == .__main__.:",
 ]
-
