@@ -1,0 +1,7 @@
+Subject,Body,Answer,Type,Queue,Priority,Language,Tags
+Cannot sign in,I receive an error after entering my password.,Reset instructions,Incident,Technical Support,high,en,account
+Rechnung Frage,Bitte erklären Sie meine Rechnung.,Antwort,Request,Billing and Payments,medium,de,billing
+NULL,Please send a copy of my latest invoice.,Agent response,Request,Billing and Payments,low,English,invoice
+N/A, ,No usable text,Request,Customer Service,low,en,empty
+Return request,I need to return an unopened item.,Return instructions,Request, ,medium,en,return
+
