@@ -1,0 +1,105 @@
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+
+# Python environments and package artifacts
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+.eggs/
+build/
+dist/
+wheelhouse/
+
+# Test, coverage, lint, and type-check caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+
+# Notebook and editor state
+.ipynb_checkpoints/
+.idea/
+.vscode/
+*.code-workspace
+*.swp
+*.swo
+*~
+
+# OS metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Data is generated locally; retain only explicit placeholders
+data/**
+!data/
+!data/**/
+!data/**/.gitkeep
+
+# Generated model and experiment artifacts
+artifacts/**
+!artifacts/
+!artifacts/**/
+!artifacts/**/.gitkeep
+models/**
+!models/
+!models/**/
+!models/**/.gitkeep
+mlruns/
+mlartifacts/
+mlflow.db
+*.joblib
+*.pickle
+*.pkl
+*.onnx
+
+# Databases, local service state, and Docker volumes
+*.db
+*.sqlite
+*.sqlite3
+pgdata/
+postgres-data/
+prefect-data/
+docker-volumes/
+.volumes/
+
+# Generated monitoring, benchmark, load-test, and runtime output
+reports/**
+!reports/
+!reports/**/
+!reports/**/.gitkeep
+evidently-reports/
+locust-reports/
+logs/
+*.log
+tmp/
+temp/
+
+# Generated Codex workspace directories (not project source)
+work/
+outputs/
+
+# Local overrides
+compose.override.yaml
+docker-compose.override.yml
+
