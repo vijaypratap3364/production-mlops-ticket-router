@@ -4,8 +4,8 @@ A local-first, production-style machine-learning system for routing English cust
 tickets to the correct support queue. The project is designed as a public portfolio repository
 and uses only open-source libraries and local services.
 
-> **Current status:** Stage 1 repository foundation. Data ingestion, model training, serving,
-> persistence, monitoring, orchestration, and the dashboard are intentionally not implemented yet.
+> **Current status:** Stage 2 reproducible data ingestion. Model training, serving, persistence,
+> monitoring, orchestration, and the dashboard are intentionally not implemented yet.
 
 ## Scope
 
@@ -28,6 +28,18 @@ revision that future ingestion code must use.
 - Ruff, mypy, pytest, coverage, and pre-commit configuration.
 - Cross-platform canonical `uv` commands plus optional Makefile aliases.
 - Unit tests for settings, logging, package imports, and bounded cleanup behavior.
+
+## Stage 2 capabilities
+
+- Revision-pinned Hugging Face snapshot download with verified offline cache reuse and explicit
+  `--force` replacement.
+- Raw-data and normalization manifests with SHA-256 lineage, UTC timestamps, configuration hashes,
+  upstream license, and Git code identity.
+- English-only normalization to Parquet with stable record/source identifiers and explicit row-drop
+  counts, including structurally malformed CSV records.
+- Modeling feature allowlist for `subject`, `body`, and their derived `text`, with reusable leakage
+  rejection.
+- Network-mocked ingestion tests using a tiny synthetic CSV fixture.
 
 ## Prerequisites
 
@@ -73,6 +85,8 @@ The `uv` commands are canonical and work in PowerShell and Bash:
 | Type-check | `uv run mypy src tests scripts` | `make typecheck` |
 | Test with coverage | `uv run pytest` | `make test` |
 | Run all non-mutating checks | See commands below | `make check` |
+| Download pinned data | `uv run python -m ticket_router.data.download` | `make download-data` |
+| Normalize raw data | `uv run python -m ticket_router.data.normalize` | `make normalize-data` |
 | Remove project caches | `uv run python scripts/clean.py` | `make clean` |
 
 Run the complete Stage 1 quality gate:
@@ -110,11 +124,24 @@ parameters, or committed documentation.
 
 Dashboard code must call application/API boundaries; modeling code must never import dashboard code.
 
+## Data ingestion
+
+Dataset files and generated manifests are local and ignored by Git. Reproduce ingestion with:
+
+```powershell
+uv run python -m ticket_router.data.download
+uv run python -m ticket_router.data.normalize
+```
+
+Existing verified outputs are reused. Use `--force` only after reviewing why replacement is needed.
+See `docs/data-source.md` for attribution, license terms, field selection, leakage exclusions,
+manifest contents, and dataset limitations.
+
 ## Roadmap
 
 - **Complete:** Stage 1—repository foundation, dependency lock, typed settings, logging, and tests.
-- **TODO:** data download and raw-source manifest.
-- **TODO:** Pandera validation, English filtering, duplicate control, and sealed splits.
+- **Complete:** Stage 2—pinned download, manifests, English normalization, and leakage contract.
+- **TODO:** Pandera validation, duplicate control, class selection, and sealed splits.
 - **TODO:** EDA, sparse baselines, MLflow experiments, and Model Registry aliases.
 - **TODO:** FastAPI, PostgreSQL/Alembic, feedback, and privacy-safe logging.
 - **TODO:** Evidently monitoring, controlled retraining, Prefect, Streamlit, and Docker Compose.
@@ -132,4 +159,3 @@ recorded commands over named data splits.
 
 **TODO—decision required:** choose the source-code license. The upstream dataset is currently marked
 CC BY-NC 4.0 and retains its own terms; a future code license will not relicense the dataset.
-
