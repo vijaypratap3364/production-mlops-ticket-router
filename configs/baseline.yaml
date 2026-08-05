@@ -1,0 +1,24 @@
+primary_metric: macro_f1
+
+tfidf:
+  ngram_range:
+    - 1
+    - 2
+  min_df: 2
+  max_features: 50000
+  sublinear_tf: true
+
+logistic_regression:
+  c: 1.0
+  class_weight: balanced
+  max_iter: 1000
+  solver: liblinear
+
+complement_nb:
+  alpha: 1.0
+
+evaluation:
+  inference_batch_size: 256
+  inference_repeats: 3
+  error_sample_size: 20
+  confused_pair_count: 10
