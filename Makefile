@@ -1,6 +1,6 @@
 UV ?= uv
 
-.PHONY: install format format-check lint typecheck test check download-data normalize-data analyze-data prepare-data clean
+.PHONY: install format format-check lint typecheck test check download-data normalize-data analyze-data prepare-data train-baselines clean
 
 install:
 	$(UV) sync --locked --all-groups
@@ -34,6 +34,9 @@ analyze-data:
 
 prepare-data:
 	$(UV) run python -m ticket_router.data.prepare
+
+train-baselines:
+	$(UV) run python -m ticket_router.modeling.train_baseline
 
 clean:
 	$(UV) run python scripts/clean.py
