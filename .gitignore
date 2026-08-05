@@ -27,6 +27,8 @@ wheelhouse/
 # Test, coverage, lint, and type-check caches
 .pytest_cache/
 .pytest-tmp/
+.test-output/
+.test-output-cache/
 .mypy_cache/
 .ruff_cache/
 .hypothesis/

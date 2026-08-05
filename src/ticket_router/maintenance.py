@@ -9,6 +9,8 @@ CACHE_DIRECTORIES = (
     ".mypy_cache",
     ".pytest_cache",
     ".pytest-tmp",
+    ".test-output",
+    ".test-output-cache",
     ".ruff_cache",
     "htmlcov",
 )
