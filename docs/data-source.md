@@ -110,5 +110,5 @@ row-filter counts. These artifacts are reproducible but intentionally not commit
 - Language labels can be noisy; Stage 2 uses the provided language field and does not claim
   independent language detection.
 - Queue names and frequencies describe the source dataset, not a universal production taxonomy.
-- Exact and near-duplicate controls, class selection, train/validation/test splitting, and train-only
-  EDA belong to later stages and are not performed during ingestion.
+- Stage 3 adds exact/template duplicate analysis, deterministic class selection, and aggregate EDA.
+  Leakage-safe grouped train/validation/test splitting remains a later stage.

@@ -4,7 +4,7 @@ A local-first, production-style machine-learning system for routing English cust
 tickets to the correct support queue. The project is designed as a public portfolio repository
 and uses only open-source libraries and local services.
 
-> **Current status:** Stage 2 reproducible data ingestion. Model training, serving, persistence,
+> **Current status:** Stage 3 data validation and analysis. Model training, serving, persistence,
 > monitoring, orchestration, and the dashboard are intentionally not implemented yet.
 
 ## Scope
@@ -40,6 +40,16 @@ revision that future ingestion code must use.
 - Modeling feature allowlist for `subject`, `body`, and their derived `text`, with reusable leakage
   rejection.
 - Network-mocked ingestion tests using a tiny synthetic CSV fixture.
+
+## Stage 3 capabilities
+
+- Strict Pandera contract for normalized IDs, language, source text, derived text, target, and
+  configuration-driven technical length bounds.
+- Exact normalized-text, contradictory-label, near-empty, and conservative template-duplicate
+  analysis without reporting ticket examples.
+- Deterministic top-ten queue selection based on configured support and split-feasibility rules.
+- Reproducible aggregate JSON/HTML EDA and authoritative selected-class artifacts.
+- Data card documenting provenance, intended use, leakage controls, privacy, and limitations.
 
 ## Prerequisites
 
@@ -87,6 +97,7 @@ The `uv` commands are canonical and work in PowerShell and Bash:
 | Run all non-mutating checks | See commands below | `make check` |
 | Download pinned data | `uv run python -m ticket_router.data.download` | `make download-data` |
 | Normalize raw data | `uv run python -m ticket_router.data.normalize` | `make normalize-data` |
+| Validate and analyze data | `uv run python -m ticket_router.data.analyze` | `make analyze-data` |
 | Remove project caches | `uv run python scripts/clean.py` | `make clean` |
 
 Run the complete Stage 1 quality gate:
@@ -131,6 +142,7 @@ Dataset files and generated manifests are local and ignored by Git. Reproduce in
 ```powershell
 uv run python -m ticket_router.data.download
 uv run python -m ticket_router.data.normalize
+uv run python -m ticket_router.data.analyze
 ```
 
 Existing verified outputs are reused. Use `--force` only after reviewing why replacement is needed.
@@ -141,7 +153,8 @@ manifest contents, and dataset limitations.
 
 - **Complete:** Stage 1—repository foundation, dependency lock, typed settings, logging, and tests.
 - **Complete:** Stage 2—pinned download, manifests, English normalization, and leakage contract.
-- **TODO:** Pandera validation, duplicate control, class selection, and sealed splits.
+- **Complete:** Stage 3—Pandera validation, duplicate analysis, target selection, EDA, and data card.
+- **TODO:** leakage-safe grouped train/validation/test splits and sealed-test loaders.
 - **TODO:** EDA, sparse baselines, MLflow experiments, and Model Registry aliases.
 - **TODO:** FastAPI, PostgreSQL/Alembic, feedback, and privacy-safe logging.
 - **TODO:** Evidently monitoring, controlled retraining, Prefect, Streamlit, and Docker Compose.
@@ -152,8 +165,10 @@ risk register. Unfinished sections are intentionally labeled and must not be rep
 
 ## Results
 
-**TODO:** No data or model metrics exist yet. Results will be added only from reproducible,
-recorded commands over named data splits.
+The Stage 3 analysis validated 28,190 normalized English records and selected all ten eligible
+observed queues. It flagged 4,495 exact duplicate groups and found no contradictory-label groups.
+See `docs/data-card.md` for the measured aggregate profile. No model has been trained and no model
+performance metric exists yet.
 
 ## License
 
