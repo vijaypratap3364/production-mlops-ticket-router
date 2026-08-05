@@ -13,12 +13,13 @@ from ticket_router.features.contracts import (
 
 
 def test_allowed_model_inputs_are_explicit() -> None:
-    assert {"subject", "body", "text"} == ALLOWED_MODEL_INPUTS
+    assert {"subject", "body", "text", "model_text"} == ALLOWED_MODEL_INPUTS
     assert validate_model_feature_columns(["subject", "body", "text"]) == (
         "subject",
         "body",
         "text",
     )
+    assert validate_model_feature_columns(["model_text"]) == ("model_text",)
 
 
 @pytest.mark.parametrize(

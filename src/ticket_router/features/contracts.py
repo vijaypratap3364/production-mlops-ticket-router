@@ -6,7 +6,7 @@ import re
 from collections.abc import Iterable
 from typing import Protocol
 
-ALLOWED_MODEL_INPUTS = frozenset({"subject", "body", "text"})
+ALLOWED_MODEL_INPUTS = frozenset({"subject", "body", "text", "model_text"})
 FORBIDDEN_MODEL_INPUTS = frozenset(
     {
         "answer",
@@ -61,8 +61,8 @@ def validate_model_feature_columns(columns: Iterable[object]) -> tuple[str, ...]
     unexpected = sorted(set(normalized_columns) - ALLOWED_MODEL_INPUTS)
     if unexpected:
         raise FeatureLeakageError(
-            "Only subject, body, and text derived from those fields are allowed; received: "
-            + ", ".join(unexpected)
+            "Only subject, body, text, and model_text derived from those fields are allowed; "
+            "received: " + ", ".join(unexpected)
         )
     return normalized_columns
 

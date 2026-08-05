@@ -76,6 +76,38 @@ class AnalysisSettings(BaseModel):
     common_tokens_per_class: int = Field(gt=0)
 
 
+class TextPreprocessingSettings(BaseModel):
+    """Conservative, stateless model-text preprocessing policy."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    unicode_normalization: Literal["NFC", "NFKC"] = "NFKC"
+    mask_email_addresses: bool = True
+    mask_urls: bool = True
+    mask_phone_numbers: bool = True
+    email_mask: str = Field(min_length=1)
+    url_mask: str = Field(min_length=1)
+    phone_mask: str = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def masks_must_be_unique(self) -> Self:
+        """Keep redaction categories distinguishable in sparse text features."""
+        masks = (self.email_mask, self.url_mask, self.phone_mask)
+        if len(set(masks)) != len(masks):
+            raise ValueError("preprocessing mask tokens must be unique")
+        return self
+
+
+class SplittingSettings(BaseModel):
+    """Versioned duplicate and grouped-stratification validation policy."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    duplicate_policy: Literal["exclude_contradictory_group_exact_duplicates"]
+    class_proportion_tolerance: float = Field(ge=0.0, lt=1.0)
+    split_size_tolerance: float = Field(ge=0.0, lt=1.0)
+
+
 class ProjectSettings(BaseModel):
     """Non-secret, version-controlled project configuration."""
 
@@ -84,6 +116,8 @@ class ProjectSettings(BaseModel):
     global_random_seed: int = Field(ge=0)
     dataset: DatasetSettings
     split_ratios: SplitRatios
+    preprocessing: TextPreprocessingSettings
+    splitting: SplittingSettings
     analysis: AnalysisSettings
     mlflow: MLflowSettings
 

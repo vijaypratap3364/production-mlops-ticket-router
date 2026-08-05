@@ -21,6 +21,9 @@ def test_settings_load_versioned_defaults() -> None:
     assert settings.project_config.dataset.text_columns == ("subject", "body")
     assert settings.project_config.dataset.number_of_target_queues == 10
     assert settings.project_config.analysis.near_empty_word_threshold == 3
+    assert settings.project_config.preprocessing.mask_email_addresses is True
+    assert settings.project_config.preprocessing.mask_phone_numbers is True
+    assert settings.project_config.splitting.class_proportion_tolerance == 0.01
     assert settings.effective_mlflow_tracking_uri == "http://127.0.0.1:5000"
 
 
@@ -53,6 +56,20 @@ def test_invalid_split_ratios_are_rejected() -> None:
             "minimum_class_count": 100,
         },
         "split_ratios": {"train": 0.8, "validation": 0.15, "test": 0.15},
+        "preprocessing": {
+            "unicode_normalization": "NFKC",
+            "mask_email_addresses": True,
+            "mask_urls": True,
+            "mask_phone_numbers": True,
+            "email_mask": "<EMAIL>",
+            "url_mask": "<URL>",
+            "phone_mask": "<PHONE>",
+        },
+        "splitting": {
+            "duplicate_policy": "exclude_contradictory_group_exact_duplicates",
+            "class_proportion_tolerance": 0.01,
+            "split_size_tolerance": 0.01,
+        },
         "analysis": {
             "max_subject_characters": 2000,
             "max_body_characters": 20000,
