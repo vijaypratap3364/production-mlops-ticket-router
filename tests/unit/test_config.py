@@ -20,6 +20,7 @@ def test_settings_load_versioned_defaults() -> None:
     assert settings.project_config.dataset.target_column == "queue"
     assert settings.project_config.dataset.text_columns == ("subject", "body")
     assert settings.project_config.dataset.number_of_target_queues == 10
+    assert settings.project_config.analysis.near_empty_word_threshold == 3
     assert settings.effective_mlflow_tracking_uri == "http://127.0.0.1:5000"
 
 
@@ -52,6 +53,15 @@ def test_invalid_split_ratios_are_rejected() -> None:
             "minimum_class_count": 100,
         },
         "split_ratios": {"train": 0.8, "validation": 0.15, "test": 0.15},
+        "analysis": {
+            "max_subject_characters": 2000,
+            "max_body_characters": 20000,
+            "max_text_characters": 22050,
+            "near_empty_word_threshold": 3,
+            "template_min_group_size": 5,
+            "token_min_document_frequency": 10,
+            "common_tokens_per_class": 10,
+        },
         "mlflow": {"tracking_uri": "http://127.0.0.1:5000", "model_name": "router"},
     }
 

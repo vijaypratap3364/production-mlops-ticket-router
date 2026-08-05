@@ -72,6 +72,12 @@ def validate_model_feature_frame(frame: FeatureFrame) -> None:
     validate_model_feature_columns(frame.columns)
 
 
+def find_forbidden_feature_columns(columns: Iterable[object]) -> tuple[str, ...]:
+    """Return normalized leakage-prone names for audits of source schemas."""
+    normalized = {_normalize_feature_name(str(column)) for column in columns}
+    return tuple(sorted(column for column in normalized if _is_forbidden(column)))
+
+
 def _normalize_feature_name(value: str) -> str:
     return re.sub(r"[^0-9a-zA-Z]+", "_", value.strip()).strip("_").casefold()
 

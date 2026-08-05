@@ -7,6 +7,7 @@ import pytest
 from ticket_router.features.contracts import (
     ALLOWED_MODEL_INPUTS,
     FeatureLeakageError,
+    find_forbidden_feature_columns,
     validate_model_feature_columns,
 )
 
@@ -42,3 +43,9 @@ def test_leakage_prone_fields_are_rejected(forbidden_column: str) -> None:
 def test_non_predictive_metadata_is_rejected() -> None:
     with pytest.raises(FeatureLeakageError, match="Only subject"):
         validate_model_feature_columns(["subject", "ticket_record_id"])
+
+
+def test_raw_schema_leakage_audit_uses_the_same_contract() -> None:
+    assert find_forbidden_feature_columns(
+        ["subject", "body", "Answer", "queue", "tag_1", "agent_notes"]
+    ) == ("agent_notes", "answer", "queue", "tag_1")

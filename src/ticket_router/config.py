@@ -62,6 +62,20 @@ class MLflowSettings(BaseModel):
     model_name: str = Field(min_length=1)
 
 
+class AnalysisSettings(BaseModel):
+    """Versioned validation and privacy-safe EDA thresholds."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    max_subject_characters: int = Field(gt=0)
+    max_body_characters: int = Field(gt=0)
+    max_text_characters: int = Field(gt=0)
+    near_empty_word_threshold: int = Field(ge=0)
+    template_min_group_size: int = Field(gt=1)
+    token_min_document_frequency: int = Field(gt=1)
+    common_tokens_per_class: int = Field(gt=0)
+
+
 class ProjectSettings(BaseModel):
     """Non-secret, version-controlled project configuration."""
 
@@ -70,6 +84,7 @@ class ProjectSettings(BaseModel):
     global_random_seed: int = Field(ge=0)
     dataset: DatasetSettings
     split_ratios: SplitRatios
+    analysis: AnalysisSettings
     mlflow: MLflowSettings
 
 

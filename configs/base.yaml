@@ -17,7 +17,15 @@ split_ratios:
   validation: 0.15
   test: 0.15
 
+analysis:
+  max_subject_characters: 2000
+  max_body_characters: 20000
+  max_text_characters: 22050
+  near_empty_word_threshold: 3
+  template_min_group_size: 5
+  token_min_document_frequency: 10
+  common_tokens_per_class: 10
+
 mlflow:
   tracking_uri: http://127.0.0.1:5000
   model_name: ticket-router
-
