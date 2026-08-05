@@ -42,10 +42,14 @@ fields. The selected target is `queue`.
 4. Validate the normalized artifact with a strict Pandera contract covering schema, ID format and
    uniqueness, English language, nonempty target/text, source-to-combined-text consistency, and
    configured technical length bounds.
-5. Compute normalized SHA-256 text-group hashes and conservative template hashes. Exact groups must
-   remain intact when train/validation/test splits are created in a later stage.
+5. Compute normalized SHA-256 text-group hashes and conservative template hashes. Exact groups
+   remain intact across train, validation, and test.
 6. Rank queue labels by descending observed count with a case-insensitive label tie-break. Select the
    configured top ten only after minimum-count and split-feasibility checks.
+7. Create stateless `model_text` with NFKC and whitespace normalization plus email, URL, and
+   phone-like masking. No stemming, stop-word removal, or learned vocabulary is applied.
+8. Exclude contradictory exact-text groups and allocate remaining groups within each queue using
+   seed 42 and 70/15/15 targets.
 
 The generated `artifacts/reports/selected_classes.json` is the authoritative label mapping. Labels
 are never manually embedded in source code.
@@ -77,12 +81,32 @@ near-empty threshold, and the conservative variable-token template rule found no
 non-exact template groups of at least five records. These are data-quality measurements, not model
 performance metrics.
 
+## Measured Stage 4 split
+
+No contradictory exact-text group was present, so all 28,190 selected records remained usable. The
+grouped-stratified allocator produced:
+
+| Split | Records | Actual percentage | Target percentage |
+|---|---:|---:|---:|
+| Train | 19,729 | 69.9858% | 70% |
+| Validation | 4,232 | 15.0124% | 15% |
+| Test | 4,229 | 15.0018% | 15% |
+
+Every selected queue appears in every split. The largest absolute class-proportion deviation was
+0.01331 percentage points, for `Service Outages and Maintenance` in validation, well inside the
+configured 1-percentage-point tolerance. Record-ID and normalized-text-hash intersections between
+splits are empty. These are preparation integrity measurements, not model-performance results.
+
+The test split is sealed from routine training loaders. It may be opened only through the explicit
+final-evaluation path after candidate selection and configuration are frozen.
+
 ## Leakage exclusions
 
-The model feature contract accepts exactly `subject`, `body`, and derived `text`. The target `queue`
-and upstream `answer`, response, priority, type, tag, assigned-agent, and resolution fields are
-rejected by the modeling boundary. EDA may audit column names and aggregate target counts but never
-passes those fields into a predictor.
+The general feature contract accepts `subject`, `body`, derived `text`, and derived `model_text`.
+Prepared modeling utilities expose exactly `model_text` and return `queue` separately as the target.
+The target `queue` and upstream `answer`, response, priority, type, tag, assigned-agent, and
+resolution fields are rejected by the modeling boundary. EDA may audit column names and aggregate
+target counts but never passes those fields into a predictor.
 
 ## Known limitations
 
@@ -92,7 +116,7 @@ passes those fields into a predictor.
 - Queue frequency is imbalanced and represents this synthetic source, not a universal taxonomy.
 - Aggregate token frequencies may reflect generator templates rather than organic user language.
 - Near-duplicate detection is deliberately conservative and is not semantic similarity detection.
-- No final split or model performance result is defined in Stage 3.
+- The final test split is defined but remains sealed; no model performance result exists yet.
 
 ## Privacy considerations
 
@@ -111,6 +135,7 @@ uv sync --locked --all-groups
 uv run python -m ticket_router.data.download
 uv run python -m ticket_router.data.normalize
 uv run python -m ticket_router.data.analyze
+uv run python -m ticket_router.data.prepare
 ```
 
 The analysis command verifies normalized-data lineage and regenerates:
@@ -120,6 +145,12 @@ artifacts/reports/selected_classes.json
 artifacts/reports/duplicate_analysis.json
 artifacts/reports/eda_report.json
 artifacts/reports/eda_report.html
+artifacts/reports/split_summary.json
+data/processed/train.parquet
+data/processed/validation.parquet
+data/processed/test.parquet
+data/processed/split_manifest.json
+data/reference/training_reference.parquet
 ```
 
 The exact measured profile and selected labels must be read from those generated artifacts. They are
