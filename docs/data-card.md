@@ -116,7 +116,8 @@ target counts but never passes those fields into a predictor.
 - Queue frequency is imbalanced and represents this synthetic source, not a universal taxonomy.
 - Aggregate token frequencies may reflect generator templates rather than organic user language.
 - Near-duplicate detection is deliberately conservative and is not semantic similarity detection.
-- The final test split is defined but remains sealed; no model performance result exists yet.
+- The final test split remains sealed. Stage 5 reports validation-only baseline performance; no
+  final-test performance result exists yet.
 
 ## Privacy considerations
 
@@ -136,6 +137,7 @@ uv run python -m ticket_router.data.download
 uv run python -m ticket_router.data.normalize
 uv run python -m ticket_router.data.analyze
 uv run python -m ticket_router.data.prepare
+uv run python -m ticket_router.modeling.train_baseline
 ```
 
 The analysis command verifies normalized-data lineage and regenerates:
