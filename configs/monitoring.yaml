@@ -1,0 +1,34 @@
+reference:
+  output_path: data/reference/monitoring_reference.parquet
+  manifest_path: data/reference/monitoring_reference_manifest.json
+  source_splits:
+    - train
+    - validation
+  inference_batch_size: 512
+
+current_window:
+  default_lookback_days: 7
+  minimum_event_count: 100
+
+drift:
+  numeric_method: wasserstein
+  categorical_method: jensenshannon
+  numeric_feature_threshold: 0.10
+  prediction_distribution_threshold: 0.10
+  confidence_distribution_threshold: 0.10
+  low_confidence_distribution_threshold: 0.10
+
+quality:
+  minimum_feedback_count: 50
+
+alerts:
+  warning_drifted_feature_share: 0.25
+  critical_drifted_feature_share: 0.50
+  warning_prediction_distribution_score: 0.10
+  critical_prediction_distribution_score: 0.20
+  warning_low_confidence_rate_increase: 0.10
+  critical_low_confidence_rate_increase: 0.20
+  warning_macro_f1_decline: 0.05
+  critical_macro_f1_decline: 0.10
+  minimum_warning_signals: 2
+  minimum_critical_signals: 2

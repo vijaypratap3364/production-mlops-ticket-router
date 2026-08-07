@@ -1,1 +1,1 @@
-"""Data, prediction, and model-quality monitoring boundary."""
+"""Privacy-safe batch drift and delayed-label quality monitoring boundary."""
