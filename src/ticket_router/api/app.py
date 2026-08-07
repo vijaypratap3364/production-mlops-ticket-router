@@ -37,16 +37,18 @@ from ticket_router.api.schemas import (
     TicketRequest,
 )
 from ticket_router.api.service import LoadedChampion, PredictionService
-from ticket_router.api.store import (
-    InMemoryPredictionFeedbackStore,
-    PredictionFeedbackStore,
-)
 from ticket_router.config import Settings
 from ticket_router.db.connectivity import DatabaseProbe, SQLAlchemyDatabaseProbe
+from ticket_router.db.contracts import PredictionFeedbackRepository
+from ticket_router.db.repositories import (
+    InMemoryPredictionFeedbackRepository,
+    SQLAlchemyPredictionFeedbackRepository,
+)
 from ticket_router.logging_config import configure_logging, get_logger
 
-StoreFactory = Callable[[], PredictionFeedbackStore]
+StoreFactory = Callable[[], PredictionFeedbackRepository]
 DatabaseProbeFactory = Callable[[str], DatabaseProbe]
+DatabaseStoreFactory = Callable[[DatabaseProbe], PredictionFeedbackRepository]
 KNOWN_ROUTES = frozenset(
     {"/health", "/ready", "/model", "/predict", "/predict/batch", "/feedback", "/metrics"}
 )
@@ -57,7 +59,7 @@ class RuntimeState:
     settings: Settings | None = None
     champion: LoadedChampion | None = None
     prediction_service: PredictionService | None = None
-    store: PredictionFeedbackStore | None = None
+    store: PredictionFeedbackRepository | None = None
     database_probe: DatabaseProbe | None = None
     model_ready: bool = False
     database_ready: bool = False
@@ -71,8 +73,9 @@ def create_app(
     *,
     settings: Settings | None = None,
     champion_loader: ChampionLoader = load_champion,
-    store_factory: StoreFactory = InMemoryPredictionFeedbackStore,
+    store_factory: StoreFactory = InMemoryPredictionFeedbackRepository,
     database_probe_factory: DatabaseProbeFactory = SQLAlchemyDatabaseProbe,
+    database_store_factory: DatabaseStoreFactory | None = None,
 ) -> FastAPI:
     """Create an isolated app; external resources are opened only during lifespan."""
     runtime = RuntimeState()
@@ -84,7 +87,6 @@ def create_app(
         runtime.settings = active_settings
         configure_logging(active_settings.log_level)
         logger = get_logger(__name__)
-        runtime.store = store_factory()
         database_url = (
             active_settings.database_url.get_secret_value()
             if active_settings.database_url is not None
@@ -95,6 +97,8 @@ def create_app(
                 runtime.database_probe = database_probe_factory(database_url)
                 await run_in_threadpool(runtime.database_probe.connect)
                 runtime.database_ready = runtime.database_probe.ready
+                factory = database_store_factory or _sqlalchemy_store
+                runtime.store = factory(runtime.database_probe)
             except Exception as exc:
                 runtime.database_ready = False
                 logger.error("database_startup_failed", error_type=type(exc).__name__)
@@ -102,6 +106,7 @@ def create_app(
             logger.error("database_startup_failed", error_type="MissingDatabaseUrl")
         else:
             runtime.database_ready = True
+            runtime.store = store_factory()
         try:
             runtime.champion = await run_in_threadpool(champion_loader, active_settings)
             runtime.model_ready = True
@@ -115,6 +120,12 @@ def create_app(
                 preprocessing=active_settings.project_config.preprocessing,
                 store=runtime.store,
                 metrics=metrics,
+                store_redacted_text=active_settings.store_redacted_ticket_text,
+                input_hmac_secret=(
+                    active_settings.input_hmac_secret.get_secret_value()
+                    if active_settings.input_hmac_secret is not None
+                    else None
+                ),
             )
         logger.info(
             "api_startup_complete",
@@ -304,6 +315,10 @@ def _require_service(runtime: RuntimeState) -> PredictionService:
     if runtime.prediction_service is None:
         raise PredictionFailureError("prediction service initialization failed")
     return runtime.prediction_service
+
+
+def _sqlalchemy_store(probe: DatabaseProbe) -> PredictionFeedbackRepository:
+    return SQLAlchemyPredictionFeedbackRepository(probe.session_factory)
 
 
 def _request_id(request: Request) -> str:

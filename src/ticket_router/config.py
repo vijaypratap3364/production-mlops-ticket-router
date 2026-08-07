@@ -173,6 +173,7 @@ class Settings(BaseSettings):
     api_maximum_body_characters: int = Field(default=20000, gt=0, le=20000)
     api_minimum_usable_characters: int = Field(default=1, gt=0)
     store_raw_ticket_content: bool = False
+    store_redacted_ticket_text: bool = False
     input_hmac_secret: SecretStr | None = None
 
     @field_validator("log_level")

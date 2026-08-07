@@ -13,11 +13,12 @@ import numpy as np
 from numpy.typing import NDArray
 
 from ticket_router.api.errors import (
-    APIServiceError,
     DatabaseUnavailableError,
+    DuplicateFeedbackError,
     InvalidFeedbackLabelError,
     PredictionFailureError,
     RequestConstraintError,
+    UnknownPredictionError,
 )
 from ticket_router.api.metrics import APIMetrics
 from ticket_router.api.schemas import (
@@ -27,10 +28,21 @@ from ticket_router.api.schemas import (
     PredictionResponse,
     TicketRequest,
 )
-from ticket_router.api.store import FeedbackEvent, PredictionEvent, PredictionFeedbackStore
 from ticket_router.config import APISettings, TextPreprocessingSettings
 from ticket_router.data.normalize import combine_ticket_text
+from ticket_router.db.contracts import (
+    FeedbackEvent,
+    PredictionEvent,
+    PredictionFeedbackRepository,
+)
+from ticket_router.db.exceptions import (
+    FeedbackAlreadyExistsError,
+    PersistenceUnavailableError,
+    PredictionNotFoundError,
+)
+from ticket_router.db.privacy import text_fingerprint
 from ticket_router.features.text import preprocess_model_text
+from ticket_router.logging_config import get_logger
 
 LOW_CONFIDENCE_WARNING = "Prediction confidence is below the configured review threshold."
 
@@ -65,14 +77,18 @@ class PredictionService:
         champion: LoadedChampion,
         api_settings: APISettings,
         preprocessing: TextPreprocessingSettings,
-        store: PredictionFeedbackStore,
+        store: PredictionFeedbackRepository,
         metrics: APIMetrics,
+        store_redacted_text: bool = False,
+        input_hmac_secret: str | None = None,
     ) -> None:
         self.champion = champion
         self.api_settings = api_settings
         self._preprocessing = preprocessing
         self._store = store
         self._metrics = metrics
+        self._store_redacted_text = store_redacted_text
+        self._input_hmac_secret = input_hmac_secret
 
     def predict_one(self, ticket: TicketRequest, *, request_id: str) -> PredictionResponse:
         return self.predict_many((ticket,), request_ids=(request_id,))[0]
@@ -111,25 +127,23 @@ class PredictionService:
             for index, request_id in enumerate(ids)
         ]
         events = tuple(
-            PredictionEvent(
-                request_id=response.request_id,
-                created_at=response.prediction_timestamp,
-                predicted_queue=response.predicted_queue,
-                confidence=response.confidence,
-                model_name=response.model_name,
-                model_version=response.model_version,
-                subject_length=len(ticket.subject),
-                body_length=len(ticket.body),
-                combined_length=len(text),
+            self._prediction_event(
+                response=response,
+                ticket=ticket,
+                model_text=text,
+                latency_ms=elapsed * 1000.0 / len(tickets),
             )
             for response, ticket, text in zip(responses, tickets, texts, strict=True)
         )
         try:
             self._store.save_predictions(events)
-        except APIServiceError:
-            raise
         except Exception as exc:
-            raise DatabaseUnavailableError("prediction persistence failed") from exc
+            self._metrics.persistence_failures.labels(operation="prediction").inc()
+            get_logger(__name__).error(
+                "prediction_persistence_failed",
+                error_type=type(exc).__name__,
+                event_count=len(events),
+            )
         self._metrics.batch_size.observe(len(tickets))
         self._metrics.predictions.inc(len(responses))
         for response in responses:
@@ -149,19 +163,59 @@ class PredictionService:
             corrected_queue=corrected_queue,
             accepted=feedback.accepted,
             comment=feedback.comment,
+            source=feedback.source,
             created_at=recorded_at,
         )
         try:
-            self._store.save_feedback(event)
-        except APIServiceError:
-            raise
-        except Exception as exc:
+            stored = self._store.save_feedback(event)
+        except PredictionNotFoundError as exc:
+            raise UnknownPredictionError(feedback.request_id) from exc
+        except FeedbackAlreadyExistsError as exc:
+            raise DuplicateFeedbackError(feedback.request_id) from exc
+        except PersistenceUnavailableError as exc:
+            self._metrics.persistence_failures.labels(operation="feedback").inc()
             raise DatabaseUnavailableError("feedback persistence failed") from exc
         return FeedbackResponse(
-            request_id=event.request_id,
-            feedback_id=event.feedback_id,
-            corrected_queue=event.corrected_queue,
-            recorded_at=event.created_at,
+            request_id=stored.request_id,
+            feedback_id=stored.feedback_id,
+            corrected_queue=stored.corrected_queue,
+            recorded_at=stored.created_at,
+        )
+
+    def _prediction_event(
+        self,
+        *,
+        response: PredictionResponse,
+        ticket: TicketRequest,
+        model_text: str,
+        latency_ms: float,
+    ) -> PredictionEvent:
+        digest, algorithm = text_fingerprint(
+            model_text,
+            hmac_secret=self._input_hmac_secret,
+        )
+        top_k: tuple[dict[str, str | float], ...] = tuple(
+            {"queue": item.queue, "confidence": item.confidence} for item in response.top_k
+        )
+        metadata = ticket.metadata.model_dump(exclude_none=True) if ticket.metadata else {}
+        return PredictionEvent(
+            request_id=response.request_id,
+            created_at=response.prediction_timestamp,
+            predicted_queue=response.predicted_queue,
+            confidence=response.confidence,
+            top_k=top_k,
+            model_name=response.model_name,
+            model_version=response.model_version,
+            subject_length=len(ticket.subject),
+            body_length=len(ticket.body),
+            word_count=len(model_text.split()),
+            language_indicator=None,
+            low_confidence=response.warning is not None,
+            latency_ms=latency_ms,
+            redacted_text=model_text if self._store_redacted_text else None,
+            text_hash=digest,
+            text_hash_algorithm=algorithm,
+            request_metadata=metadata,
         )
 
     def _model_text(self, ticket: TicketRequest) -> str:

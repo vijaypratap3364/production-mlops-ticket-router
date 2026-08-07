@@ -57,6 +57,12 @@ class APIMetrics:
             buckets=(1, 2, 5, 10, 25, 50, 100, 250, 500, 1000),
             registry=self.registry,
         )
+        self.persistence_failures = Counter(
+            "ticket_router_persistence_failures_total",
+            "Best-effort or required persistence operation failures.",
+            ("operation",),
+            registry=self.registry,
+        )
 
     def render(self) -> bytes:
         return generate_latest(self.registry)

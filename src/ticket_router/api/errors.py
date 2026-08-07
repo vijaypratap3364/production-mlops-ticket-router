@@ -29,6 +29,12 @@ class UnknownPredictionError(APIServiceError):
     public_message = "No prediction exists for the supplied request_id."
 
 
+class DuplicateFeedbackError(APIServiceError):
+    code = "duplicate_feedback"
+    status_code = 409
+    public_message = "Feedback already exists for the supplied request_id."
+
+
 class InvalidFeedbackLabelError(APIServiceError):
     code = "invalid_feedback_label"
     status_code = 422

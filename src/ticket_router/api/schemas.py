@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
 
@@ -71,6 +71,7 @@ class FeedbackRequest(BaseModel):
     corrected_queue: str = Field(min_length=1, max_length=200)
     accepted: bool | None = None
     comment: str | None = Field(default=None, min_length=1, max_length=500)
+    source: Literal["user", "agent", "reviewer", "demo"] = "user"
 
 
 class FeedbackResponse(BaseModel):
