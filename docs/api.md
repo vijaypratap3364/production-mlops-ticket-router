@@ -70,10 +70,11 @@ The champion must provide calibrated `predict_proba`; confidence is never synthe
 
 Normal request logs contain a generated request ID, route, status, and latency—not the subject,
 body, preprocessing output, feedback comment, database URL, or exception message. The default
-Stage 8 local store retains only privacy-safe prediction fields plus submitted feedback in memory.
-PostgreSQL tables, migrations, durable prediction logging, and retention behavior remain explicitly
-unfinished and will replace this adapter in the database stage. If `DATABASE_URL` is configured,
-startup probes it and readiness fails deterministically when it is unavailable.
+database-free adapter retains privacy-safe prediction fields plus submitted feedback in memory. If
+`DATABASE_URL` is configured, the API requires the current Alembic revision and uses PostgreSQL for
+prediction metadata and create-once delayed feedback. Analytics-write failures do not discard an
+otherwise successful inference response; they increment an operational metric and emit a safe
+structured error. See `docs/database.md` for schema, migration, privacy, and retention details.
 
 The service binds to localhost by default and has no authentication. Do not expose it to an
 untrusted network without TLS, authentication, rate limiting, and a reviewed deployment design.

@@ -4,9 +4,9 @@ A local-first, production-style machine-learning system for routing English cust
 tickets to the correct support queue. The project is designed as a public portfolio repository
 and uses only open-source libraries and local services.
 
-> **Current status:** Stage 7 single-use final evaluation and MLflow Model Registry candidate.
-> Explicit champion promotion is available but has not been approved. Serving, persistence,
-> monitoring, orchestration, and the dashboard are intentionally not implemented yet.
+> **Current status:** Stage 9 PostgreSQL persistence and delayed-label storage. Explicit champion
+> promotion is available but has not been approved. Monitoring, orchestration, and the dashboard
+> remain intentionally unfinished.
 
 ## Scope
 
@@ -103,8 +103,19 @@ revision that future ingestion code must use.
   Prometheus-compatible metrics endpoints with stable structured errors.
 - Shared leakage-safe preprocessing, bounded Pydantic input contracts, calibrated top-k output,
   low-confidence warnings, request IDs, and privacy-safe structured logs.
-- Dependency-injected tests that require neither a production MLflow server nor PostgreSQL. The
-  Stage 8 feedback store is intentionally in-memory until reviewed migrations are implemented.
+- Dependency-injected tests that require neither a production MLflow server nor PostgreSQL; the
+  database-free local mode retains an in-memory adapter.
+
+## Stage 9 capabilities
+
+- SQLAlchemy 2 models and repositories for privacy-safe prediction metadata, create-once delayed
+  feedback, monitoring runs, and retraining lineage.
+- Alembic initial migration using PostgreSQL UUID, timezone-aware timestamps, JSONB, foreign keys,
+  uniqueness/check constraints, and operational indexes.
+- Best-effort prediction analytics with failure metrics and safe logs; feedback remains strict,
+  label-valid, foreign-key-backed, and duplicate-protected.
+- HMAC-SHA-256 text fingerprints when a secret is configured, no raw subject/body columns, and
+  explicit opt-in redacted-text storage with a documented retention policy.
 
 ## Prerequisites
 
@@ -159,6 +170,8 @@ The `uv` commands are canonical and work in PowerShell and Bash:
 | Final evaluation and registration | `uv run python -m ticket_router.registry.evaluate_final` | `make evaluate-final` |
 | Explicit candidate promotion | `uv run python -m ticket_router.registry.promote --approve` | `make promote-candidate` |
 | Run the local inference API | `uv run uvicorn ticket_router.api.main:app --host 127.0.0.1 --port 8000` | `make api-dev` |
+| Apply application migrations | `uv run alembic upgrade head` | `make db-upgrade` |
+| Revert one migration | `uv run alembic downgrade -1` | `make db-downgrade` |
 | Remove project caches | `uv run python scripts/clean.py` | `make clean` |
 
 Run the complete Stage 1 quality gate:
@@ -193,7 +206,7 @@ parameters, or committed documentation.
   evaluation, selection, and artifacts.
 - `src/ticket_router/registry`: future candidate/champion registry operations.
 - `src/ticket_router/api`: champion-backed FastAPI transport, prediction/feedback service, and metrics.
-- `src/ticket_router/db`: future SQLAlchemy persistence.
+- `src/ticket_router/db`: SQLAlchemy models, sessions, repositories, privacy hashes, and migrations.
 - `src/ticket_router/monitoring`: future Evidently and delayed-label quality monitoring.
 - `src/ticket_router/orchestration`: future Prefect flows.
 - `src/ticket_router/dashboard`: future Streamlit API client and presentation code.
@@ -228,13 +241,14 @@ manifest contents, and dataset limitations.
 - **Complete:** Stage 7—single-use final evaluation, candidate registration, and promotion gates.
 - **Pending human action:** Explicit initial promotion from `candidate` to `champion`.
 - **Complete:** Stage 8—FastAPI champion inference, feedback contract, metrics, and privacy-safe logs.
-- **TODO:** PostgreSQL/Alembic durable prediction and feedback persistence.
+- **Complete:** Stage 9—PostgreSQL schema, Alembic migration, repositories, and API persistence.
 - **TODO:** Evidently monitoring, controlled retraining, Prefect, Streamlit, and Docker Compose.
 - **TODO:** GitHub Actions, load tests, benchmark report, and remaining operational documentation.
 
 See `docs/implementation-plan.md` for the complete architecture, lifecycle, acceptance criteria, and
 risk register. Unfinished sections are intentionally labeled and must not be represented as working.
 See `docs/api.md` for champion prerequisites, local startup, endpoint contracts, and curl examples.
+See `docs/database.md` for the schema, migration workflow, reset precautions, and retention policy.
 
 ## Results
 
