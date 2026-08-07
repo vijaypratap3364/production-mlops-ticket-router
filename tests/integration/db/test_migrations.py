@@ -49,6 +49,29 @@ def test_initial_migration_upgrade_and_downgrade_on_disposable_database(tmp_path
             assert connection.execute(
                 text("SELECT version_num FROM alembic_version")
             ).scalar_one() == (EXPECTED_SCHEMA_REVISION)
+        prediction_columns = {
+            column["name"] for column in inspect(engine).get_columns("prediction_events")
+        }
+        assert {
+            "combined_length",
+            "uppercase_ratio",
+            "digit_ratio",
+            "punctuation_ratio",
+            "url_count",
+            "email_marker_count",
+        }.issubset(prediction_columns)
+        prediction_checks = {
+            constraint["name"]
+            for constraint in inspect(engine).get_check_constraints("prediction_events")
+        }
+        assert {
+            "ck_prediction_events_combined_length_nonnegative",
+            "ck_prediction_events_uppercase_ratio_range",
+            "ck_prediction_events_digit_ratio_range",
+            "ck_prediction_events_punctuation_ratio_range",
+            "ck_prediction_events_url_count_nonnegative",
+            "ck_prediction_events_email_marker_count_nonnegative",
+        }.issubset(prediction_checks)
 
         _downgrade(engine)
         assert inspect(engine).get_table_names() == ["alembic_version"]
@@ -73,6 +96,7 @@ def test_initial_migration_compiles_for_postgresql(
     assert "JSONB" in sql
     assert "UUID" in sql
     assert "TIMESTAMP WITH TIME ZONE" in sql
+    assert "ALTER TABLE prediction_events ADD COLUMN combined_length" in sql
 
 
 @pytest.mark.integration

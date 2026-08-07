@@ -23,6 +23,7 @@ from ticket_router.db.exceptions import (
 )
 from ticket_router.db.models import FeedbackEventModel
 from ticket_router.db.repositories import (
+    SQLAlchemyMonitoringDataRepository,
     SQLAlchemyMonitoringRunRepository,
     SQLAlchemyPredictionFeedbackRepository,
     SQLAlchemyRetrainingRunRepository,
@@ -44,6 +45,12 @@ def _prediction_event(*, request_id: str | None = None) -> PredictionEvent:
         subject_length=7,
         body_length=12,
         word_count=5,
+        combined_length=19,
+        uppercase_ratio=0.1,
+        digit_ratio=0.0,
+        punctuation_ratio=0.05,
+        url_count=0,
+        email_marker_count=0,
         language_indicator=None,
         low_confidence=False,
         latency_ms=1.25,
@@ -184,3 +191,49 @@ def test_monitoring_and_retraining_run_repositories(
     assert monitoring_repository.get(str(uuid4())) is None
     assert retraining_repository.get(str(uuid4())) is None
     assert isinstance(UUID(monitoring.run_id), UUID)
+
+
+def test_monitoring_data_queries_filter_time_model_version_and_join_feedback(
+    sqlite_session_factory: sessionmaker[Session],
+) -> None:
+    predictions = SQLAlchemyPredictionFeedbackRepository(sqlite_session_factory)
+    monitoring = SQLAlchemyMonitoringDataRepository(sqlite_session_factory)
+    version_seven = _prediction_event()
+    version_eight = PredictionEvent(
+        **{
+            **_prediction_event().__dict__,
+            "request_id": str(uuid4()),
+            "model_version": "8",
+            "created_at": datetime(2026, 8, 7, 13, tzinfo=UTC),
+        }
+    )
+    predictions.save_predictions((version_seven, version_eight))
+    predictions.save_feedback(
+        FeedbackEvent(
+            feedback_id=str(uuid4()),
+            request_id=version_seven.request_id,
+            corrected_queue="Technical",
+            accepted=False,
+            comment=None,
+            source="reviewer",
+            created_at=datetime(2026, 8, 7, 14, tzinfo=UTC),
+        )
+    )
+
+    current = monitoring.load_predictions(
+        start=datetime(2026, 8, 7, 11, tzinfo=UTC),
+        end=datetime(2026, 8, 7, 14, tzinfo=UTC),
+        model_version="7",
+    )
+    labeled = monitoring.load_labeled_predictions(
+        start=datetime(2026, 8, 7, 11, tzinfo=UTC),
+        end=datetime(2026, 8, 7, 14, tzinfo=UTC),
+        model_version="7",
+    )
+
+    assert len(current) == 1
+    assert current[0].model_version == "7"
+    assert current[0].combined_length == 19
+    assert len(labeled) == 1
+    assert labeled[0].corrected_queue == "Technical"
+    assert labeled[0].model_version == "7"

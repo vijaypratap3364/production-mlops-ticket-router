@@ -29,6 +29,7 @@ from ticket_router.db.models import (
     PredictionEventModel,
     RetrainingRunModel,
 )
+from ticket_router.monitoring.contracts import CurrentPrediction, LabeledPrediction
 
 APPROVED_REQUEST_METADATA_FIELDS = frozenset({"client_name", "correlation_id"})
 
@@ -201,6 +202,71 @@ class SQLAlchemyMonitoringRunRepository:
             raise PersistenceUnavailableError("monitoring-run lookup failed") from exc
 
 
+class SQLAlchemyMonitoringDataRepository:
+    """Read bounded privacy-safe prediction windows and their delayed labels."""
+
+    def __init__(self, session_factory: sessionmaker[Session]) -> None:
+        self._session_factory = session_factory
+
+    def load_predictions(
+        self,
+        *,
+        start: datetime,
+        end: datetime,
+        model_version: str | None = None,
+    ) -> tuple[CurrentPrediction, ...]:
+        statement = (
+            select(PredictionEventModel)
+            .where(PredictionEventModel.created_at >= _require_utc(start))
+            .where(PredictionEventModel.created_at < _require_utc(end))
+            .where(PredictionEventModel.combined_length > 0)
+            .order_by(PredictionEventModel.created_at, PredictionEventModel.request_id)
+        )
+        if model_version is not None:
+            statement = statement.where(PredictionEventModel.model_version == model_version)
+        try:
+            with self._session_factory() as session:
+                models = session.scalars(statement).all()
+        except SQLAlchemyError as exc:
+            raise PersistenceUnavailableError("monitoring prediction query failed") from exc
+        return tuple(_current_prediction(model) for model in models)
+
+    def load_labeled_predictions(
+        self,
+        *,
+        start: datetime,
+        end: datetime,
+        model_version: str | None = None,
+    ) -> tuple[LabeledPrediction, ...]:
+        statement = (
+            select(PredictionEventModel, FeedbackEventModel)
+            .join(
+                FeedbackEventModel, FeedbackEventModel.request_id == PredictionEventModel.request_id
+            )
+            .where(PredictionEventModel.created_at >= _require_utc(start))
+            .where(PredictionEventModel.created_at < _require_utc(end))
+            .where(PredictionEventModel.combined_length > 0)
+            .order_by(PredictionEventModel.created_at, PredictionEventModel.request_id)
+        )
+        if model_version is not None:
+            statement = statement.where(PredictionEventModel.model_version == model_version)
+        try:
+            with self._session_factory() as session:
+                rows = session.execute(statement).all()
+        except SQLAlchemyError as exc:
+            raise PersistenceUnavailableError("monitoring feedback query failed") from exc
+        return tuple(
+            LabeledPrediction(
+                predicted_queue=prediction.predicted_queue,
+                corrected_queue=feedback.corrected_queue,
+                confidence=prediction.confidence,
+                accepted=feedback.accepted,
+                model_version=prediction.model_version,
+            )
+            for prediction, feedback in rows
+        )
+
+
 class SQLAlchemyRetrainingRunRepository:
     def __init__(self, session_factory: sessionmaker[Session]) -> None:
         self._session_factory = session_factory
@@ -247,6 +313,12 @@ def _prediction_model(event: PredictionEvent, *, request_uuid: UUID) -> Predicti
         subject_length=event.subject_length,
         body_length=event.body_length,
         word_count=event.word_count,
+        combined_length=event.combined_length,
+        uppercase_ratio=event.uppercase_ratio,
+        digit_ratio=event.digit_ratio,
+        punctuation_ratio=event.punctuation_ratio,
+        url_count=event.url_count,
+        email_marker_count=event.email_marker_count,
         language_indicator=event.language_indicator,
         low_confidence=event.low_confidence,
         latency_ms=event.latency_ms,
@@ -276,6 +348,12 @@ def _prediction_record(model: PredictionEventModel) -> PredictionEvent:
         subject_length=model.subject_length,
         body_length=model.body_length,
         word_count=model.word_count,
+        combined_length=model.combined_length,
+        uppercase_ratio=model.uppercase_ratio,
+        digit_ratio=model.digit_ratio,
+        punctuation_ratio=model.punctuation_ratio,
+        url_count=model.url_count,
+        email_marker_count=model.email_marker_count,
         language_indicator=model.language_indicator,
         low_confidence=model.low_confidence,
         latency_ms=model.latency_ms,
@@ -296,6 +374,26 @@ def _stored_feedback(model: FeedbackEventModel) -> StoredFeedback:
         source=model.source,
         model_version=model.model_version,
         created_at=_as_utc(model.created_at),
+    )
+
+
+def _current_prediction(model: PredictionEventModel) -> CurrentPrediction:
+    return CurrentPrediction(
+        request_id=str(model.request_id),
+        created_at=_as_utc(model.created_at),
+        model_version=model.model_version,
+        predicted_queue=model.predicted_queue,
+        prediction_confidence=model.confidence,
+        low_confidence=model.low_confidence,
+        subject_length=model.subject_length,
+        body_length=model.body_length,
+        combined_length=model.combined_length,
+        word_count=model.word_count,
+        uppercase_ratio=model.uppercase_ratio,
+        digit_ratio=model.digit_ratio,
+        punctuation_ratio=model.punctuation_ratio,
+        url_count=model.url_count,
+        email_marker_count=model.email_marker_count,
     )
 
 

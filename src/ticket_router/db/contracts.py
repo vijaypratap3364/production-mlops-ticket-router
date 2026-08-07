@@ -21,6 +21,12 @@ class PredictionEvent:
     subject_length: int
     body_length: int
     word_count: int
+    combined_length: int
+    uppercase_ratio: float
+    digit_ratio: float
+    punctuation_ratio: float
+    url_count: int
+    email_marker_count: int
     language_indicator: str | None
     low_confidence: bool
     latency_ms: float

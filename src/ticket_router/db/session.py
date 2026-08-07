@@ -6,7 +6,7 @@ from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 
-EXPECTED_SCHEMA_REVISION = "20260807_0001"
+EXPECTED_SCHEMA_REVISION = "20260807_0002"
 
 
 class DatabaseSessionManager:

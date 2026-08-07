@@ -43,6 +43,7 @@ from ticket_router.db.exceptions import (
 from ticket_router.db.privacy import text_fingerprint
 from ticket_router.features.text import preprocess_model_text
 from ticket_router.logging_config import get_logger
+from ticket_router.monitoring.features import derive_text_monitoring_features
 
 LOW_CONFIDENCE_WARNING = "Prediction confidence is below the configured review threshold."
 
@@ -198,6 +199,11 @@ class PredictionService:
             {"queue": item.queue, "confidence": item.confidence} for item in response.top_k
         )
         metadata = ticket.metadata.model_dump(exclude_none=True) if ticket.metadata else {}
+        monitoring = derive_text_monitoring_features(
+            subject=ticket.subject,
+            body=ticket.body,
+            model_text=model_text,
+        )
         return PredictionEvent(
             request_id=response.request_id,
             created_at=response.prediction_timestamp,
@@ -206,9 +212,15 @@ class PredictionService:
             top_k=top_k,
             model_name=response.model_name,
             model_version=response.model_version,
-            subject_length=len(ticket.subject),
-            body_length=len(ticket.body),
-            word_count=len(model_text.split()),
+            subject_length=monitoring.subject_length,
+            body_length=monitoring.body_length,
+            word_count=monitoring.word_count,
+            combined_length=monitoring.combined_length,
+            uppercase_ratio=monitoring.uppercase_ratio,
+            digit_ratio=monitoring.digit_ratio,
+            punctuation_ratio=monitoring.punctuation_ratio,
+            url_count=monitoring.url_count,
+            email_marker_count=monitoring.email_marker_count,
             language_indicator=None,
             low_confidence=response.warning is not None,
             latency_ms=latency_ms,

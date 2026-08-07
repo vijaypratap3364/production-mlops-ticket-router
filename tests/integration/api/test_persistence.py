@@ -105,6 +105,9 @@ def test_prediction_and_feedback_are_persisted_without_raw_text(
                 "correlation_id": "corr-7",
             }
             assert persisted_prediction.text_hash_algorithm == "hmac-sha256"
+            assert persisted_prediction.combined_length > 0
+            assert persisted_prediction.email_marker_count == 1
+            assert 0.0 <= persisted_prediction.punctuation_ratio <= 1.0
             assert raw_marker not in persisted_prediction.text_hash
             assert persisted_feedback.model_version == prediction["model_version"]
             assert persisted_feedback.source == "reviewer"

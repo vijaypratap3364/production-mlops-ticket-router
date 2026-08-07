@@ -34,6 +34,18 @@ class PredictionEventModel(Base):
         CheckConstraint("subject_length >= 0", name="subject_length_nonnegative"),
         CheckConstraint("body_length >= 0", name="body_length_nonnegative"),
         CheckConstraint("word_count >= 0", name="word_count_nonnegative"),
+        CheckConstraint("combined_length >= 0", name="combined_length_nonnegative"),
+        CheckConstraint(
+            "uppercase_ratio >= 0 AND uppercase_ratio <= 1",
+            name="uppercase_ratio_range",
+        ),
+        CheckConstraint("digit_ratio >= 0 AND digit_ratio <= 1", name="digit_ratio_range"),
+        CheckConstraint(
+            "punctuation_ratio >= 0 AND punctuation_ratio <= 1",
+            name="punctuation_ratio_range",
+        ),
+        CheckConstraint("url_count >= 0", name="url_count_nonnegative"),
+        CheckConstraint("email_marker_count >= 0", name="email_marker_count_nonnegative"),
         CheckConstraint("latency_ms >= 0", name="latency_nonnegative"),
     )
 
@@ -47,6 +59,12 @@ class PredictionEventModel(Base):
     subject_length: Mapped[int] = mapped_column(Integer)
     body_length: Mapped[int] = mapped_column(Integer)
     word_count: Mapped[int] = mapped_column(Integer)
+    combined_length: Mapped[int] = mapped_column(Integer)
+    uppercase_ratio: Mapped[float] = mapped_column(Float)
+    digit_ratio: Mapped[float] = mapped_column(Float)
+    punctuation_ratio: Mapped[float] = mapped_column(Float)
+    url_count: Mapped[int] = mapped_column(Integer)
+    email_marker_count: Mapped[int] = mapped_column(Integer)
     language_indicator: Mapped[str | None] = mapped_column(String(16), nullable=True)
     low_confidence: Mapped[bool] = mapped_column(Boolean, index=True)
     latency_ms: Mapped[float] = mapped_column(Float)
