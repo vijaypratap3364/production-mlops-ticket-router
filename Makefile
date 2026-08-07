@@ -1,6 +1,6 @@
 UV ?= uv
 
-.PHONY: install format format-check lint typecheck test check download-data normalize-data analyze-data prepare-data train-baselines experiment-candidates evaluate-final recover-final-registration promote-candidate api-dev db-upgrade db-downgrade db-revision test-db-integration clean
+.PHONY: install format format-check lint typecheck test check download-data normalize-data analyze-data prepare-data train-baselines experiment-candidates evaluate-final recover-final-registration promote-candidate api-dev db-upgrade db-downgrade db-revision test-db-integration build-monitoring-reference monitor simulate-drift clean
 
 install:
 	$(UV) sync --locked --all-groups
@@ -65,6 +65,15 @@ db-revision:
 
 test-db-integration:
 	$(UV) run pytest -m integration tests/integration/db
+
+build-monitoring-reference:
+	$(UV) run python -m ticket_router.monitoring.build_reference
+
+monitor:
+	$(UV) run python -m ticket_router.monitoring.run --lookback-days 7
+
+simulate-drift:
+	$(UV) run python -m ticket_router.monitoring.simulate_drift
 
 clean:
 	$(UV) run python scripts/clean.py

@@ -172,6 +172,9 @@ The `uv` commands are canonical and work in PowerShell and Bash:
 | Run the local inference API | `uv run uvicorn ticket_router.api.main:app --host 127.0.0.1 --port 8000` | `make api-dev` |
 | Apply application migrations | `uv run alembic upgrade head` | `make db-upgrade` |
 | Revert one migration | `uv run alembic downgrade -1` | `make db-downgrade` |
+| Build monitoring reference | `uv run python -m ticket_router.monitoring.build_reference` | `make build-monitoring-reference` |
+| Monitor the last seven days | `uv run python -m ticket_router.monitoring.run --lookback-days 7` | `make monitor` |
+| Verify planted drift | `uv run python -m ticket_router.monitoring.simulate_drift` | `make simulate-drift` |
 | Remove project caches | `uv run python scripts/clean.py` | `make clean` |
 
 Run the complete Stage 1 quality gate:
@@ -207,7 +210,8 @@ parameters, or committed documentation.
 - `src/ticket_router/registry`: future candidate/champion registry operations.
 - `src/ticket_router/api`: champion-backed FastAPI transport, prediction/feedback service, and metrics.
 - `src/ticket_router/db`: SQLAlchemy models, sessions, repositories, privacy hashes, and migrations.
-- `src/ticket_router/monitoring`: future Evidently and delayed-label quality monitoring.
+- `src/ticket_router/monitoring`: aggregate feature extraction, Evidently drift reports,
+  delayed-label quality, and multi-signal alert policy.
 - `src/ticket_router/orchestration`: future Prefect flows.
 - `src/ticket_router/dashboard`: future Streamlit API client and presentation code.
 
@@ -242,13 +246,15 @@ manifest contents, and dataset limitations.
 - **Pending human action:** Explicit initial promotion from `candidate` to `champion`.
 - **Complete:** Stage 8—FastAPI champion inference, feedback contract, metrics, and privacy-safe logs.
 - **Complete:** Stage 9—PostgreSQL schema, Alembic migration, repositories, and API persistence.
-- **TODO:** Evidently monitoring, controlled retraining, Prefect, Streamlit, and Docker Compose.
+- **Complete:** Stage 10—privacy-safe Evidently monitoring, delayed-label quality, and alert policy.
+- **TODO:** Controlled retraining, Prefect, Streamlit, and Docker Compose.
 - **TODO:** GitHub Actions, load tests, benchmark report, and remaining operational documentation.
 
 See `docs/implementation-plan.md` for the complete architecture, lifecycle, acceptance criteria, and
 risk register. Unfinished sections are intentionally labeled and must not be represented as working.
 See `docs/api.md` for champion prerequisites, local startup, endpoint contracts, and curl examples.
 See `docs/database.md` for the schema, migration workflow, reset precautions, and retention policy.
+See `docs/monitoring.md` for feature definitions, thresholds, report interpretation, and commands.
 
 ## Results
 

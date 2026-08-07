@@ -11,6 +11,9 @@ local PostgreSQL is unavailable.
 numeric MLflow model version, predicted queue, confidence, top-k JSON, input lengths and word count,
 optional language indicator, low-confidence flag, inference latency, one-way text fingerprint, and
 the allowlisted `client_name`/`correlation_id` metadata. It has no `subject` or `body` columns.
+Migration `20260807_0002` adds only safe monitoring derivatives: combined length, uppercase/digit/
+punctuation ratios, and URL/email-pattern counts. These values are computed in memory during
+inference; the matching raw text is still not retained.
 
 `feedback_events` uses a UUID primary key and a foreign key to `prediction_events.request_id`. It
 records one corrected label per prediction, nullable acceptance, a bounded optional comment, source,
@@ -24,7 +27,7 @@ identifiers, gate results, and timestamps. Neither table stores ticket text.
 
 PostgreSQL uses native UUID, `TIMESTAMPTZ`, and JSONB through SQLAlchemy dialect variants. Foreign
 keys, unique constraints, nonnegative numeric checks, period-order checks, and operational indexes
-are created by migration `20260807_0001`.
+are created by migration `20260807_0001`; monitoring derivatives are added by `20260807_0002`.
 
 ## Privacy behavior
 
@@ -62,7 +65,7 @@ uv run alembic revision --autogenerate -m "describe schema change"
 ```
 
 Inspect every generated revision before applying it. The API readiness check requires revision
-`20260807_0001`; an empty or outdated database remains unready.
+`20260807_0002`; an empty or outdated database remains unready.
 
 For an explicitly disposable local database whose name starts with `test_` or ends with `_test`:
 
