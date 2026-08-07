@@ -1,6 +1,6 @@
 UV ?= uv
 
-.PHONY: install format format-check lint typecheck test check download-data normalize-data analyze-data prepare-data train-baselines experiment-candidates evaluate-final recover-final-registration promote-candidate clean
+.PHONY: install format format-check lint typecheck test check download-data normalize-data analyze-data prepare-data train-baselines experiment-candidates evaluate-final recover-final-registration promote-candidate api-dev clean
 
 install:
 	$(UV) sync --locked --all-groups
@@ -49,6 +49,9 @@ recover-final-registration:
 
 promote-candidate:
 	$(UV) run python -m ticket_router.registry.promote --approve
+
+api-dev:
+	$(UV) run uvicorn ticket_router.api.main:app --host 127.0.0.1 --port 8000
 
 clean:
 	$(UV) run python scripts/clean.py
