@@ -1,0 +1,38 @@
+experiment_name: ticket-router-candidate-search
+local_tracking_directory: mlruns
+allow_local_tracking_fallback: true
+primary_metric: macro_f1
+
+search:
+  cv_folds: 3
+  iterations_per_candidate: 2
+  n_jobs: 1
+  word_ngram_ranges:
+    - [1, 1]
+    - [1, 2]
+  character_ngram_ranges:
+    - [3, 5]
+    - [3, 6]
+  min_df_values: [2, 5]
+  max_df_values: [0.95, 1.0]
+  max_features_values: [30000, 50000]
+  regularization_c_values: [0.5, 1.0, 1.5]
+  class_weight_values: [null, balanced]
+  complement_nb_alpha_values: [0.5, 1.0]
+  calibration_cv_folds: 3
+
+selection:
+  minimum_per_class_recall: 0.30
+  major_class_minimum_support: 400
+  major_class_minimum_recall: 0.40
+  maximum_inference_milliseconds_per_record: 1.0
+  maximum_serialized_model_size_mb: 100.0
+  maximum_cv_macro_f1_standard_deviation: 0.03
+  maximum_cv_to_validation_macro_f1_drop: 0.10
+
+evaluation:
+  inference_batch_size: 256
+  inference_repeats: 3
+  error_sample_size: 20
+  confused_pair_count: 10
+  confidence_bins: 10
