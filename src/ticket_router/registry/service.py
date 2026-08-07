@@ -104,6 +104,10 @@ class ModelRegistryService:
         """Load a trusted sklearn model through a registry alias."""
         return cast(Predictor, mlflow.sklearn.load_model(f"models:/{name}@{alias}"))
 
+    def load_version(self, *, name: str, version: str) -> Predictor:
+        """Load an immutable numeric version after resolving a deployment alias."""
+        return cast(Predictor, mlflow.sklearn.load_model(f"models:/{name}/{version}"))
+
     def _ensure_registered_model(self, name: str) -> None:
         try:
             self._client.get_registered_model(name)
