@@ -95,6 +95,17 @@ revision that future ingestion code must use.
 - Configurable absolute and champion-relative promotion gates plus a separate explicit human command;
   `champion` remains unset until that command is intentionally approved.
 
+## Stage 8 capabilities
+
+- Lifespan-managed FastAPI service that resolves `champion` once, pins its numeric MLflow version,
+  verifies calibrated probabilities, and never trains or reloads per request.
+- Health, readiness, model metadata, single and bounded-batch prediction, delayed feedback, and
+  Prometheus-compatible metrics endpoints with stable structured errors.
+- Shared leakage-safe preprocessing, bounded Pydantic input contracts, calibrated top-k output,
+  low-confidence warnings, request IDs, and privacy-safe structured logs.
+- Dependency-injected tests that require neither a production MLflow server nor PostgreSQL. The
+  Stage 8 feedback store is intentionally in-memory until reviewed migrations are implemented.
+
 ## Prerequisites
 
 - Git
@@ -147,6 +158,7 @@ The `uv` commands are canonical and work in PowerShell and Bash:
 | Run tracked candidate search | `uv run python -m ticket_router.modeling.train_candidates` | `make experiment-candidates` |
 | Final evaluation and registration | `uv run python -m ticket_router.registry.evaluate_final` | `make evaluate-final` |
 | Explicit candidate promotion | `uv run python -m ticket_router.registry.promote --approve` | `make promote-candidate` |
+| Run the local inference API | `uv run uvicorn ticket_router.api.main:app --host 127.0.0.1 --port 8000` | `make api-dev` |
 | Remove project caches | `uv run python scripts/clean.py` | `make clean` |
 
 Run the complete Stage 1 quality gate:
@@ -180,7 +192,7 @@ parameters, or committed documentation.
 - `src/ticket_router/modeling`: validation-only baseline/candidate pipelines, MLflow tracking,
   evaluation, selection, and artifacts.
 - `src/ticket_router/registry`: future candidate/champion registry operations.
-- `src/ticket_router/api`: future FastAPI transport adapters.
+- `src/ticket_router/api`: champion-backed FastAPI transport, prediction/feedback service, and metrics.
 - `src/ticket_router/db`: future SQLAlchemy persistence.
 - `src/ticket_router/monitoring`: future Evidently and delayed-label quality monitoring.
 - `src/ticket_router/orchestration`: future Prefect flows.
@@ -215,12 +227,14 @@ manifest contents, and dataset limitations.
 - **Complete:** Stage 6—MLflow tracking, bounded candidate search, guardrails, and candidate selection.
 - **Complete:** Stage 7—single-use final evaluation, candidate registration, and promotion gates.
 - **Pending human action:** Explicit initial promotion from `candidate` to `champion`.
-- **TODO:** FastAPI, PostgreSQL/Alembic, feedback, and privacy-safe logging.
+- **Complete:** Stage 8—FastAPI champion inference, feedback contract, metrics, and privacy-safe logs.
+- **TODO:** PostgreSQL/Alembic durable prediction and feedback persistence.
 - **TODO:** Evidently monitoring, controlled retraining, Prefect, Streamlit, and Docker Compose.
 - **TODO:** GitHub Actions, load tests, benchmark report, and remaining operational documentation.
 
 See `docs/implementation-plan.md` for the complete architecture, lifecycle, acceptance criteria, and
 risk register. Unfinished sections are intentionally labeled and must not be represented as working.
+See `docs/api.md` for champion prerequisites, local startup, endpoint contracts, and curl examples.
 
 ## Results
 
