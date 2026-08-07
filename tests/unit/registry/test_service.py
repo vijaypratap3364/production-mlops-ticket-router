@@ -65,12 +65,17 @@ def test_candidate_registration_alias_promotion_and_champion_loading(tmp_path: P
         )
         champion = service.resolve_alias(name=registered.name, alias="champion")
         loaded = service.load_alias(name=registered.name, alias="champion")
+        version_loaded = service.load_version(name=registered.name, version=registered.version)
 
         assert champion is not None
         assert champion.version == promoted.version == registered.version
         examples = tuple(safe_input_example().tolist())
         assert np.array_equal(
             np.asarray(loaded.predict(examples), dtype=object),
+            pipeline.predict(examples),
+        )
+        assert np.array_equal(
+            np.asarray(version_loaded.predict(examples), dtype=object),
             pipeline.predict(examples),
         )
     finally:
