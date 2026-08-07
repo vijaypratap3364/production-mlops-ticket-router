@@ -76,6 +76,27 @@ class AnalysisSettings(BaseModel):
     common_tokens_per_class: int = Field(gt=0)
 
 
+class APISettings(BaseModel):
+    """Typed deployment inference validation and response limits."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    confidence_warning_threshold: float = Field(ge=0.0, le=1.0)
+    default_top_k: int = Field(gt=0, le=20)
+    maximum_batch_size: int = Field(gt=0, le=1000)
+    maximum_subject_characters: int = Field(gt=0, le=2000)
+    maximum_body_characters: int = Field(gt=0, le=20000)
+    minimum_usable_characters: int = Field(gt=0)
+
+    @model_validator(mode="after")
+    def usable_text_limit_must_fit_inputs(self) -> Self:
+        """Ensure at least one valid request can satisfy the usable-text rule."""
+        maximum_combined = self.maximum_subject_characters + self.maximum_body_characters
+        if self.minimum_usable_characters > maximum_combined:
+            raise ValueError("minimum_usable_characters exceeds the combined input limits")
+        return self
+
+
 class TextPreprocessingSettings(BaseModel):
     """Conservative, stateless model-text preprocessing policy."""
 
@@ -139,6 +160,18 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     global_random_seed: int | None = Field(default=None, ge=0)
     mlflow_tracking_uri: str | None = None
+    mlflow_registered_model_name: str | None = None
+    mlflow_model_alias: str = "champion"
+    database_url: SecretStr | None = None
+    database_required: bool = False
+    api_host: str = "127.0.0.1"
+    api_port: int = Field(default=8000, ge=1, le=65535)
+    api_confidence_warning_threshold: float = Field(default=0.50, ge=0.0, le=1.0)
+    api_default_top_k: int = Field(default=3, gt=0, le=20)
+    api_maximum_batch_size: int = Field(default=100, gt=0, le=1000)
+    api_maximum_subject_characters: int = Field(default=2000, gt=0, le=2000)
+    api_maximum_body_characters: int = Field(default=20000, gt=0, le=20000)
+    api_minimum_usable_characters: int = Field(default=1, gt=0)
     store_raw_ticket_content: bool = False
     input_hmac_secret: SecretStr | None = None
 
@@ -166,6 +199,23 @@ class Settings(BaseSettings):
     def effective_mlflow_tracking_uri(self) -> str:
         """Return the deployment override or the versioned local MLflow URI."""
         return self.mlflow_tracking_uri or self.project_config.mlflow.tracking_uri
+
+    @property
+    def effective_registered_model_name(self) -> str:
+        """Return the deployment model-name override or the versioned default."""
+        return self.mlflow_registered_model_name or self.project_config.mlflow.model_name
+
+    @property
+    def api_settings(self) -> APISettings:
+        """Assemble the typed serving limits from deployment environment values."""
+        return APISettings(
+            confidence_warning_threshold=self.api_confidence_warning_threshold,
+            default_top_k=self.api_default_top_k,
+            maximum_batch_size=self.api_maximum_batch_size,
+            maximum_subject_characters=self.api_maximum_subject_characters,
+            maximum_body_characters=self.api_maximum_body_characters,
+            minimum_usable_characters=self.api_minimum_usable_characters,
+        )
 
     @classmethod
     def load(

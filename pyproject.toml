@@ -28,6 +28,7 @@ runtime = [
   "pandas",
   "pandera[pandas]",
   "polars",
+  "prometheus-client",
   "psycopg[binary]",
   "scikit-learn",
   "sqlalchemy",
@@ -38,6 +39,7 @@ development = [
   "pre-commit",
   "pytest",
   "pytest-cov",
+  "httpx",
   "ruff",
   "types-pyyaml",
 ]
@@ -93,11 +95,11 @@ plugins = ["pydantic.mypy"]
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests"]
-cache_dir = ".test-output-cache"
+cache_dir = "tmp/pytest-cache-uv"
 addopts = [
   "--strict-config",
   "--strict-markers",
-  "--basetemp=.test-output",
+  "--basetemp=tmp/pytest-uv",
   "--cov=ticket_router",
   "--cov-branch",
   "--cov-report=term-missing",

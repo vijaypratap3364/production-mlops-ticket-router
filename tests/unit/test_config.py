@@ -25,7 +25,10 @@ def test_settings_load_versioned_defaults(monkeypatch: pytest.MonkeyPatch) -> No
     assert settings.project_config.preprocessing.mask_email_addresses is True
     assert settings.project_config.preprocessing.mask_phone_numbers is True
     assert settings.project_config.splitting.class_proportion_tolerance == 0.01
+    assert settings.api_settings.maximum_batch_size == 100
+    assert settings.api_settings.confidence_warning_threshold == 0.50
     assert settings.effective_mlflow_tracking_uri == "http://127.0.0.1:5000"
+    assert settings.effective_registered_model_name == "ticket-router"
 
 
 def test_environment_overrides_runtime_values(
