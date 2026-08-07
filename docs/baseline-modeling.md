@@ -101,5 +101,6 @@ predictions, and model binaries are ignored by Git and must be reproduced locall
 
 The source data is synthetic and template-heavy, so these validation metrics may overstate
 real-world behavior. Exact duplicate groups are isolated across splits, but semantic near-duplicate
-templates may remain. No extensive tuning, probability calibration, MLflow tracking, registry
-operation, candidate selection, or test evaluation was performed in this stage.
+templates may remain. This stage did not perform tuning, probability calibration, MLflow tracking,
+registry operation, candidate selection, or test evaluation. Stage 6 subsequently logged the
+incumbent and four additional families in MLflow; see `docs/candidate-experimentation.md`.

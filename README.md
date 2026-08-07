@@ -4,9 +4,9 @@ A local-first, production-style machine-learning system for routing English cust
 tickets to the correct support queue. The project is designed as a public portfolio repository
 and uses only open-source libraries and local services.
 
-> **Current status:** Stage 5 validation-only sparse-text baselines. Final-test evaluation, MLflow,
-> registry promotion, serving, persistence, monitoring, orchestration, and the dashboard are
-> intentionally not implemented yet.
+> **Current status:** Stage 6 validation-only candidate experimentation with local MLflow tracking.
+> Final-test evaluation, registry promotion, serving, persistence, monitoring, orchestration, and
+> the dashboard are intentionally not implemented yet.
 
 ## Scope
 
@@ -73,6 +73,17 @@ revision that future ingestion code must use.
   token-redacted error analysis.
 - Machine-readable validation leaderboard with explicit `test_evaluated=false` lineage.
 
+## Stage 6 capabilities
+
+- Local MLflow tracking with a SQLite backend fallback when the configured server is unavailable;
+  remote tracking remains environment-configurable for the later PostgreSQL-backed service.
+- Restrained, seeded train-only cross-validation across word, character, combined word/character,
+  calibrated LinearSVC, and ComplementNB sparse-text candidates.
+- Validation-only candidate ranking with configurable per-class recall, major-class recall,
+  latency, model-size, cross-validation stability, and train/validation-gap guardrails.
+- Loadable MLflow model artifacts with safe synthetic input examples, signatures, lineage hashes,
+  package versions, metrics, plots, and privacy-safe error analysis.
+
 ## Prerequisites
 
 - Git
@@ -122,6 +133,7 @@ The `uv` commands are canonical and work in PowerShell and Bash:
 | Validate and analyze data | `uv run python -m ticket_router.data.analyze` | `make analyze-data` |
 | Prepare deterministic splits | `uv run python -m ticket_router.data.prepare` | `make prepare-data` |
 | Train validation-only baselines | `uv run python -m ticket_router.modeling.train_baseline` | `make train-baselines` |
+| Run tracked candidate search | `uv run python -m ticket_router.modeling.train_candidates` | `make experiment-candidates` |
 | Remove project caches | `uv run python scripts/clean.py` | `make clean` |
 
 Run the complete Stage 1 quality gate:
@@ -139,7 +151,8 @@ uv run pre-commit run --all-files
 Non-secret, reproducibility-sensitive values live in `configs/base.yaml`, including the seed,
 pinned dataset revision, English filter, target/text columns, target queue count, provisional
 minimum class support, split ratios, local MLflow URI, and model name. The bounded Stage 5 model and
-benchmark settings live separately in `configs/baseline.yaml`.
+benchmark settings live in `configs/baseline.yaml`; Stage 6 search and selection guardrails live in
+`configs/experiments.yaml`.
 
 Deployment-specific values come from environment variables or an ignored `.env` file. Environment
 values such as `GLOBAL_RANDOM_SEED` and `MLFLOW_TRACKING_URI` override their versioned YAML defaults
@@ -150,7 +163,8 @@ parameters, or committed documentation.
 
 - `src/ticket_router/data`: future reproducible ingestion and validation.
 - `src/ticket_router/features`: future leakage-safe text features.
-- `src/ticket_router/modeling`: validation-only baseline pipelines, evaluation, and artifacts.
+- `src/ticket_router/modeling`: validation-only baseline/candidate pipelines, MLflow tracking,
+  evaluation, selection, and artifacts.
 - `src/ticket_router/registry`: future candidate/champion registry operations.
 - `src/ticket_router/api`: future FastAPI transport adapters.
 - `src/ticket_router/db`: future SQLAlchemy persistence.
@@ -170,6 +184,7 @@ uv run python -m ticket_router.data.normalize
 uv run python -m ticket_router.data.analyze
 uv run python -m ticket_router.data.prepare
 uv run python -m ticket_router.modeling.train_baseline
+uv run python -m ticket_router.modeling.train_candidates
 ```
 
 Existing verified outputs are reused. Use `--force` only after reviewing why replacement is needed.
@@ -183,7 +198,8 @@ manifest contents, and dataset limitations.
 - **Complete:** Stage 3—Pandera validation, duplicate analysis, target selection, EDA, and data card.
 - **Complete:** Stage 4—conservative preprocessing, grouped splits, manifests, and sealed-test loaders.
 - **Complete:** Stage 5—validation-only sparse baselines, evaluation artifacts, and leaderboard.
-- **TODO:** MLflow experiments, bounded model experiments, and Model Registry aliases.
+- **Complete:** Stage 6—MLflow tracking, bounded candidate search, guardrails, and candidate selection.
+- **TODO:** Final sealed-test evaluation and Model Registry candidate/champion aliases.
 - **TODO:** FastAPI, PostgreSQL/Alembic, feedback, and privacy-safe logging.
 - **TODO:** Evidently monitoring, controlled retraining, Prefect, Streamlit, and Docker Compose.
 - **TODO:** GitHub Actions, load tests, benchmark report, data card, and model card.
@@ -196,9 +212,10 @@ risk register. Unfinished sections are intentionally labeled and must not be rep
 The Stage 3 analysis validated 28,190 normalized English records and selected all ten eligible
 observed queues. It flagged 4,495 exact duplicate groups and found no contradictory-label groups.
 Stage 4 produced 19,729 training, 4,232 validation, and 4,229 sealed-test records without record-ID
-or exact-text-group overlap. The strongest Stage 5 baseline was balanced TF-IDF logistic regression
-with validation macro F1 of 0.58822; the test set was not evaluated. See `docs/data-card.md` for the
-data profile and `docs/baseline-modeling.md` for the complete measured baseline comparison.
+or exact-text-group overlap. The Stage 5 incumbent scored 0.58822 validation macro F1. Stage 6
+selected calibrated word TF-IDF + LinearSVC at 0.67812 validation macro F1 after train-only
+cross-validation and guardrail checks. The test set was not evaluated. See `docs/data-card.md`,
+`docs/baseline-modeling.md`, and `docs/candidate-experimentation.md` for measured details.
 
 ## License
 
