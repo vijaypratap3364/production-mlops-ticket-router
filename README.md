@@ -4,9 +4,9 @@ A local-first, production-style machine-learning system for routing English cust
 tickets to the correct support queue. The project is designed as a public portfolio repository
 and uses only open-source libraries and local services.
 
-> **Current status:** Stage 6 validation-only candidate experimentation with local MLflow tracking.
-> Final-test evaluation, registry promotion, serving, persistence, monitoring, orchestration, and
-> the dashboard are intentionally not implemented yet.
+> **Current status:** Stage 7 single-use final evaluation and MLflow Model Registry candidate.
+> Explicit champion promotion is available but has not been approved. Serving, persistence,
+> monitoring, orchestration, and the dashboard are intentionally not implemented yet.
 
 ## Scope
 
@@ -84,6 +84,17 @@ revision that future ingestion code must use.
 - Loadable MLflow model artifacts with safe synthetic input examples, signatures, lineage hashes,
   package versions, metrics, plots, and privacy-safe error analysis.
 
+## Stage 7 capabilities
+
+- Frozen Stage 6 winner refitted on train+validation and evaluated once on the sealed test split,
+  with a persistent access audit that rejects repeated evaluation.
+- Final metrics, per-class results, predictions, confusion matrix, latency distribution, model size,
+  lineage, and token-redacted error analysis logged locally.
+- MLflow Model Registry version `ticket-router/1` with alias `candidate`, load/signature/contract
+  verification, and aliases instead of deprecated lifecycle stages.
+- Configurable absolute and champion-relative promotion gates plus a separate explicit human command;
+  `champion` remains unset until that command is intentionally approved.
+
 ## Prerequisites
 
 - Git
@@ -134,6 +145,8 @@ The `uv` commands are canonical and work in PowerShell and Bash:
 | Prepare deterministic splits | `uv run python -m ticket_router.data.prepare` | `make prepare-data` |
 | Train validation-only baselines | `uv run python -m ticket_router.modeling.train_baseline` | `make train-baselines` |
 | Run tracked candidate search | `uv run python -m ticket_router.modeling.train_candidates` | `make experiment-candidates` |
+| Final evaluation and registration | `uv run python -m ticket_router.registry.evaluate_final` | `make evaluate-final` |
+| Explicit candidate promotion | `uv run python -m ticket_router.registry.promote --approve` | `make promote-candidate` |
 | Remove project caches | `uv run python scripts/clean.py` | `make clean` |
 
 Run the complete Stage 1 quality gate:
@@ -152,7 +165,8 @@ Non-secret, reproducibility-sensitive values live in `configs/base.yaml`, includ
 pinned dataset revision, English filter, target/text columns, target queue count, provisional
 minimum class support, split ratios, local MLflow URI, and model name. The bounded Stage 5 model and
 benchmark settings live in `configs/baseline.yaml`; Stage 6 search and selection guardrails live in
-`configs/experiments.yaml`.
+`configs/experiments.yaml`; the frozen final pipeline and promotion gates live in
+`configs/final_model.yaml`.
 
 Deployment-specific values come from environment variables or an ignored `.env` file. Environment
 values such as `GLOBAL_RANDOM_SEED` and `MLFLOW_TRACKING_URI` override their versioned YAML defaults
@@ -199,10 +213,11 @@ manifest contents, and dataset limitations.
 - **Complete:** Stage 4—conservative preprocessing, grouped splits, manifests, and sealed-test loaders.
 - **Complete:** Stage 5—validation-only sparse baselines, evaluation artifacts, and leaderboard.
 - **Complete:** Stage 6—MLflow tracking, bounded candidate search, guardrails, and candidate selection.
-- **TODO:** Final sealed-test evaluation and Model Registry candidate/champion aliases.
+- **Complete:** Stage 7—single-use final evaluation, candidate registration, and promotion gates.
+- **Pending human action:** Explicit initial promotion from `candidate` to `champion`.
 - **TODO:** FastAPI, PostgreSQL/Alembic, feedback, and privacy-safe logging.
 - **TODO:** Evidently monitoring, controlled retraining, Prefect, Streamlit, and Docker Compose.
-- **TODO:** GitHub Actions, load tests, benchmark report, data card, and model card.
+- **TODO:** GitHub Actions, load tests, benchmark report, and remaining operational documentation.
 
 See `docs/implementation-plan.md` for the complete architecture, lifecycle, acceptance criteria, and
 risk register. Unfinished sections are intentionally labeled and must not be represented as working.
@@ -214,8 +229,10 @@ observed queues. It flagged 4,495 exact duplicate groups and found no contradict
 Stage 4 produced 19,729 training, 4,232 validation, and 4,229 sealed-test records without record-ID
 or exact-text-group overlap. The Stage 5 incumbent scored 0.58822 validation macro F1. Stage 6
 selected calibrated word TF-IDF + LinearSVC at 0.67812 validation macro F1 after train-only
-cross-validation and guardrail checks. The test set was not evaluated. See `docs/data-card.md`,
-`docs/baseline-modeling.md`, and `docs/candidate-experimentation.md` for measured details.
+cross-validation and guardrail checks. Its single authorized Stage 7 test evaluation scored 0.69681
+macro F1 and registered `ticket-router` version 1 as `candidate`; `champion` remains unset. See
+`docs/data-card.md`, `docs/baseline-modeling.md`, `docs/candidate-experimentation.md`, and
+`docs/model-card.md` for measured details.
 
 ## License
 

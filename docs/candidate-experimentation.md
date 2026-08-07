@@ -111,6 +111,6 @@ may be large. A reload check successfully loaded the selected model from
 
 The dataset is synthetic and template-heavy; validation performance may not transfer to real
 support traffic. Confidence calibration is measured on the same validation split used for final
-candidate comparison, so it is diagnostic rather than a claim of production calibration. Stage 6
-does not perform final test evaluation, register a model, assign a candidate/champion alias, or
-serve predictions. Those actions require the later final-evaluation and registry stage.
+candidate comparison, so it is diagnostic rather than a claim of production calibration. Stage 7
+subsequently performed the single authorized final evaluation and registered the model as
+`candidate`; see `docs/model-card.md`. Serving remains a later-stage boundary.
