@@ -10,7 +10,8 @@ from pydantic import ValidationError
 from ticket_router.config import ProjectSettings, Settings
 
 
-def test_settings_load_versioned_defaults() -> None:
+def test_settings_load_versioned_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("MLFLOW_TRACKING_URI", raising=False)
     settings = Settings.load(env_file=None)
 
     assert settings.random_seed == 42
