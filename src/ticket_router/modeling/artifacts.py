@@ -9,7 +9,7 @@ import sys
 from dataclasses import dataclass
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 from uuid import uuid4
 
 import joblib  # type: ignore[import-untyped]
@@ -49,8 +49,9 @@ def build_error_analysis(
     label_order: tuple[str, ...],
     sample_size: int,
     confused_pair_count: int,
+    evaluation_split: Literal["validation", "test"] = "validation",
 ) -> dict[str, object]:
-    """Create aggregate confusions and redacted validation examples."""
+    """Create aggregate confusions and redacted evaluation examples."""
     confused_pairs: list[dict[str, int | str]] = []
     for actual_index, actual_label in enumerate(label_order):
         for predicted_index, predicted_label in enumerate(label_order):
@@ -100,11 +101,11 @@ def build_error_analysis(
         "most_frequently_confused_class_pairs": confused_pairs[:confused_pair_count],
         "lowest_recall_classes": list(lowest_recall[: min(5, len(lowest_recall))]),
         "high_confidence_incorrect_predictions": [
-            _example(index, result, validation_texts, validation_labels)
+            _example(index, result, validation_texts, validation_labels, evaluation_split)
             for index in incorrect_indices[:sample_size]
         ],
         "low_confidence_correct_predictions": [
-            _example(index, result, validation_texts, validation_labels)
+            _example(index, result, validation_texts, validation_labels, evaluation_split)
             for index in correct_indices[:sample_size]
         ],
     }
@@ -125,8 +126,9 @@ def write_model_artifacts(
     lineage: dict[str, object],
     error_sample_size: int,
     confused_pair_count: int,
+    evaluation_split: Literal["validation", "test"] = "validation",
 ) -> ModelArtifactSummary:
-    """Serialize one fitted pipeline and every required validation artifact."""
+    """Serialize one fitted pipeline and every required evaluation artifact."""
     model_directory = run_directory / model_name
     model_directory.mkdir(parents=True, exist_ok=False)
     model_path = model_directory / "pipeline.joblib"
@@ -154,11 +156,13 @@ def write_model_artifacts(
         model_directory / "confusion_matrix.png",
         result.confusion_matrix,
         label_order,
+        evaluation_split,
     )
-    _write_validation_predictions(
-        model_directory / "validation_predictions.parquet",
+    _write_predictions(
+        model_directory / f"{evaluation_split}_predictions.parquet",
         result,
         validation_labels,
+        evaluation_split,
     )
     atomic_write_json(model_directory / "model_configuration.json", model_configuration)
     atomic_write_json(model_directory / "inference_benchmark.json", inference_benchmark)
@@ -181,6 +185,7 @@ def write_model_artifacts(
             label_order=label_order,
             sample_size=error_sample_size,
             confused_pair_count=confused_pair_count,
+            evaluation_split=evaluation_split,
         ),
     )
     return ModelArtifactSummary(
@@ -222,9 +227,10 @@ def _example(
     result: EvaluationResult,
     texts: list[str],
     labels: list[str],
+    evaluation_split: Literal["validation", "test"],
 ) -> dict[str, float | int | str]:
     return {
-        "validation_row_index": index,
+        f"{evaluation_split}_row_index": index,
         "actual_class": labels[index],
         "predicted_class": str(result.predictions[index]),
         "confidence": float(result.confidences[index]),
@@ -239,14 +245,15 @@ def _redacted_excerpt(text: str, *, maximum_characters: int = 180) -> str:
     return excerpt
 
 
-def _write_validation_predictions(
+def _write_predictions(
     path: Path,
     result: EvaluationResult,
     validation_labels: list[str],
+    evaluation_split: Literal["validation", "test"],
 ) -> None:
     frame = pl.DataFrame(
         {
-            "validation_row_index": range(len(validation_labels)),
+            f"{evaluation_split}_row_index": range(len(validation_labels)),
             "actual_class": validation_labels,
             "predicted_class": [str(value) for value in result.predictions],
             "confidence": result.confidences,
@@ -274,12 +281,13 @@ def _write_confusion_matrix(
     path: Path,
     matrix: np.ndarray[Any, np.dtype[np.int64]],
     labels: tuple[str, ...],
+    evaluation_split: Literal["validation", "test"],
 ) -> None:
     figure, axis = plt.subplots(figsize=(12, 10))
     image = axis.imshow(matrix, interpolation="nearest", cmap="Blues")
     figure.colorbar(image, ax=axis)
     axis.set(
-        title="Validation confusion matrix",
+        title=f"{evaluation_split.title()} confusion matrix",
         xlabel="Predicted queue",
         ylabel="Actual queue",
         xticks=range(len(labels)),

@@ -6,8 +6,11 @@ import re
 import urllib.error
 import urllib.request
 from collections.abc import Callable, Mapping
+from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass
+from io import StringIO
 from pathlib import Path
+from typing import Protocol
 
 import mlflow
 import mlflow.sklearn
@@ -18,7 +21,19 @@ from sklearn.pipeline import Pipeline  # type: ignore[import-untyped]
 
 from ticket_router.config import Settings
 from ticket_router.modeling.artifacts import environment_versions
-from ticket_router.modeling.experiment_config import CandidateExperimentSettings
+
+
+class TrackingConfig(Protocol):
+    """Configuration fields required by the tracking resolver."""
+
+    @property
+    def experiment_name(self) -> str: ...
+
+    @property
+    def local_tracking_directory(self) -> Path: ...
+
+    @property
+    def allow_local_tracking_fallback(self) -> bool: ...
 
 
 @dataclass(frozen=True)
@@ -41,7 +56,7 @@ class LoggedCandidate:
 def configure_experiment_tracking(
     *,
     settings: Settings,
-    experiment_config: CandidateExperimentSettings,
+    experiment_config: TrackingConfig,
     project_root: Path,
     availability_check: Callable[[str], bool] | None = None,
 ) -> TrackingResolution:
@@ -128,15 +143,59 @@ def log_candidate_to_mlflow(
     return LoggedCandidate(run_id=run_id, model_uri=f"runs:/{run_id}/model")
 
 
+def log_final_model_to_mlflow(
+    *,
+    experiment_name: str,
+    run_name: str,
+    pipeline: Pipeline,
+    parameters: Mapping[str, object],
+    metrics: Mapping[str, float],
+    per_class_metrics: tuple[dict[str, float | int | str], ...],
+    tags: Mapping[str, str],
+    lineage: Mapping[str, object],
+    local_artifact_directory: Path,
+) -> LoggedCandidate:
+    """Log the single authorized final evaluation and its loadable fitted model."""
+    mlflow.set_experiment(experiment_name)
+    signature, input_example = create_model_signature(pipeline)
+    # MLflow emits Unicode hyperlink decorations for HTTP tracking. Redirect its
+    # console stream so Windows legacy code pages cannot abort an otherwise valid run.
+    with (
+        redirect_stdout(StringIO()),
+        redirect_stderr(StringIO()),
+        mlflow.start_run(run_name=run_name, tags=dict(tags)) as active_run,
+    ):
+        mlflow.log_params({key: _parameter_value(value) for key, value in parameters.items()})
+        mlflow.log_metrics(dict(metrics))
+        mlflow.log_metrics(_per_class_mlflow_metrics(per_class_metrics, prefix="test"))
+        mlflow.log_dict(dict(lineage), "lineage.json")
+        versions = environment_versions()
+        mlflow.log_dict(versions, "package_versions.json")
+        mlflow.log_artifacts(str(local_artifact_directory), artifact_path="final_evaluation")
+        mlflow.sklearn.log_model(
+            sk_model=pipeline,
+            name="model",
+            signature=signature,
+            input_example=input_example,
+            serialization_format="cloudpickle",
+            metadata={"test_evaluated": True},
+            pip_requirements=_model_requirements(versions),
+        )
+        run_id = active_run.info.run_id
+    return LoggedCandidate(run_id=run_id, model_uri=f"runs:/{run_id}/model")
+
+
 def _per_class_mlflow_metrics(
     rows: tuple[dict[str, float | int | str], ...],
+    *,
+    prefix: str = "validation",
 ) -> dict[str, float]:
     metrics: dict[str, float] = {}
     for row in rows:
         class_slug = re.sub(r"[^a-z0-9]+", "_", str(row["class"]).casefold()).strip("_")
-        metrics[f"validation_precision__{class_slug}"] = float(row["precision"])
-        metrics[f"validation_recall__{class_slug}"] = float(row["recall"])
-        metrics[f"validation_f1__{class_slug}"] = float(row["f1"])
+        metrics[f"{prefix}_precision__{class_slug}"] = float(row["precision"])
+        metrics[f"{prefix}_recall__{class_slug}"] = float(row["recall"])
+        metrics[f"{prefix}_f1__{class_slug}"] = float(row["f1"])
     return metrics
 
 

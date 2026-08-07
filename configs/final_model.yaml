@@ -1,0 +1,42 @@
+experiment_name: ticket-router-final-evaluation
+local_tracking_directory: mlruns
+allow_local_tracking_fallback: true
+
+selected_candidate:
+  name: word_tfidf_calibrated_linear_svc
+  stage6_run_id: 03ada1859756492bb9619c5e873099dc
+  stage6_configuration_sha256: 8df1c27dccf8cfd9e868141a4a552b908961b002da31e8c5c7aa6e74550db80a
+  validation_macro_f1: 0.6781197274223635
+  validation_weighted_f1: 0.6619372030859952
+  word_ngram_range: [1, 2]
+  min_df: 2
+  max_df: 1.0
+  max_features: 50000
+  sublinear_tf: true
+  regularization_c: 1.5
+  class_weight: null
+  max_iter: 5000
+  calibration_cv_folds: 3
+  calibration_method: sigmoid
+
+evaluation:
+  inference_batch_size: 256
+  inference_repeats: 7
+  error_sample_size: 20
+  confused_pair_count: 10
+
+registry:
+  model_name: ticket-router
+  candidate_alias: candidate
+  champion_alias: champion
+
+promotion:
+  minimum_macro_f1: 0.60
+  maximum_macro_f1_regression: 0.02
+  minimum_per_class_recall: 0.45
+  maximum_inference_milliseconds_per_record: 1.0
+  required_input_dtype: str
+  required_output_dtype: str
+  require_model_load: true
+  require_prediction_contract: true
+  require_signature_compatibility: true
