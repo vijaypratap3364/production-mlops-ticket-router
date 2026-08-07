@@ -38,12 +38,14 @@ def test_environment_overrides_runtime_values(
     monkeypatch.setenv("GLOBAL_RANDOM_SEED", "7")
     monkeypatch.setenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
     monkeypatch.setenv("INPUT_HMAC_SECRET", "unit-test-secret")
+    monkeypatch.setenv("STORE_REDACTED_TICKET_TEXT", "true")
 
     settings = Settings.load(env_file=None)
 
     assert settings.log_level == "DEBUG"
     assert settings.random_seed == 7
     assert settings.effective_mlflow_tracking_uri == "http://mlflow:5000"
+    assert settings.store_redacted_ticket_text is True
     assert "unit-test-secret" not in repr(settings)
 
 
