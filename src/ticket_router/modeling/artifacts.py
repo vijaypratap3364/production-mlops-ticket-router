@@ -196,7 +196,15 @@ def write_model_artifacts(
 
 def environment_versions() -> dict[str, str]:
     """Capture runtime and direct numerical/model package versions."""
-    packages = ("joblib", "matplotlib", "numpy", "polars", "scikit-learn", "scipy")
+    packages = (
+        "cloudpickle",
+        "joblib",
+        "matplotlib",
+        "numpy",
+        "polars",
+        "scikit-learn",
+        "scipy",
+    )
     result = {
         "python": sys.version.split()[0],
         "platform": platform.platform(),
@@ -281,7 +289,7 @@ def _write_confusion_matrix(
     )
     plt.setp(axis.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor")
     figure.tight_layout()
-    temporary = path.with_name(f".{path.name}.{uuid4().hex}.tmp")
+    temporary = path.with_name(f".tmp-{uuid4().hex[:8]}")
     try:
         figure.savefig(temporary, format="png", dpi=140, bbox_inches="tight")
         os.replace(temporary, path)
@@ -291,7 +299,7 @@ def _write_confusion_matrix(
 
 
 def _atomic_joblib_dump(pipeline: Pipeline, path: Path) -> None:
-    temporary = path.with_name(f".{path.name}.{uuid4().hex}.tmp")
+    temporary = path.with_name(f".tmp-{uuid4().hex[:8]}")
     try:
         joblib.dump(pipeline, temporary, compress=3)
         os.replace(temporary, path)
@@ -300,7 +308,7 @@ def _atomic_joblib_dump(pipeline: Pipeline, path: Path) -> None:
 
 
 def _atomic_polars_write(frame: pl.DataFrame, path: Path, *, parquet: bool) -> None:
-    temporary = path.with_name(f".{path.name}.{uuid4().hex}.tmp")
+    temporary = path.with_name(f".tmp-{uuid4().hex[:8]}")
     try:
         if parquet:
             frame.write_parquet(temporary, compression="zstd")
