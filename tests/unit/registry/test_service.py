@@ -54,9 +54,17 @@ def test_candidate_registration_alias_promotion_and_champion_loading(tmp_path: P
         )
 
         candidate = service.resolve_alias(name=registered.name, alias="candidate")
+        existing = service.find_version_by_run_id(name=registered.name, run_id=run_id)
         assert candidate is not None
         assert candidate.version == registered.version
+        assert existing == registered
         assert service.resolve_alias(name=registered.name, alias="champion") is None
+
+        service.assign_alias(
+            name=registered.name,
+            alias="candidate",
+            version=registered.version,
+        )
 
         promoted = service.promote_candidate(
             name=registered.name,

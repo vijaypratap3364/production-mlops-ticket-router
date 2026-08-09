@@ -184,12 +184,26 @@ def test_monitoring_and_retraining_run_repositories(
     )
 
     monitoring_repository.save(monitoring)
+    older_monitoring = MonitoringRun(
+        **{
+            **monitoring.__dict__,
+            "run_id": str(uuid4()),
+            "started_at": started - timedelta(days=1),
+            "completed_at": started - timedelta(days=1) + timedelta(minutes=2),
+            "drift_status": "healthy",
+        }
+    )
+    monitoring_repository.save(older_monitoring)
     retraining_repository.save(retraining)
 
     assert monitoring_repository.get(monitoring.run_id) == monitoring
     assert retraining_repository.get(retraining.run_id) == retraining
     assert monitoring_repository.get(str(uuid4())) is None
     assert retraining_repository.get(str(uuid4())) is None
+    assert monitoring_repository.list_recent(limit=1) == (monitoring,)
+    assert monitoring_repository.list_recent(limit=2) == (monitoring, older_monitoring)
+    with pytest.raises(ValueError, match="positive"):
+        monitoring_repository.list_recent(limit=0)
     assert isinstance(UUID(monitoring.run_id), UUID)
 
 
