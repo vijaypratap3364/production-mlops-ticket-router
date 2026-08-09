@@ -1,0 +1,36 @@
+runtime:
+  temporary_failure_retries: 2
+  retry_delay_seconds: 10
+  work_pool_name: ticket-router-local
+  work_queue_name: default
+
+paths:
+  base_config: configs/base.yaml
+  experiment_config: configs/experiments.yaml
+  final_model_config: configs/final_model.yaml
+  monitoring_config: configs/monitoring.yaml
+  raw_manifest: data/raw/data_manifest.json
+  normalized_data: data/interim/normalized_tickets.parquet
+  normalization_manifest: data/interim/normalization_manifest.json
+  selected_classes: artifacts/reports/selected_classes.json
+  processed_directory: data/processed
+  reference_directory: data/reference
+  reports_directory: artifacts/reports
+  model_artifacts_directory: artifacts/models
+  leaderboard: artifacts/reports/model_leaderboard.csv
+  monitoring_output_directory: artifacts/reports/monitoring
+  approved_feedback_input: data/retraining/inbox/approved_labeled_tickets.parquet
+  retraining_output_directory: data/retraining/runs
+  orchestration_output_directory: artifacts/reports/orchestration
+
+retraining:
+  minimum_new_feedback_labels: 100
+  required_consecutive_critical_windows: 2
+  macro_f1_decline_tolerance: 0.10
+  sustained_low_confidence_rate_increase: 0.20
+
+schedules:
+  enabled: false
+  timezone: UTC
+  monitoring_cron: "0 2 * * *"
+  retraining_evaluation_cron: "0 3 * * 0"
