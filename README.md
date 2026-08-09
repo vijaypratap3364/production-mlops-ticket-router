@@ -4,9 +4,9 @@ A local-first, production-style machine-learning system for routing English cust
 tickets to the correct support queue. The project is designed as a public portfolio repository
 and uses only open-source libraries and local services.
 
-> **Current status:** Stage 9 PostgreSQL persistence and delayed-label storage. Explicit champion
-> promotion is available but has not been approved. Monitoring, orchestration, and the dashboard
-> remain intentionally unfinished.
+> **Current status:** Stage 11 local Prefect orchestration and controlled candidate retraining.
+> Explicit champion promotion is available but has not been approved. The dashboard and Compose
+> integration remain intentionally unfinished.
 
 ## Scope
 
@@ -175,6 +175,12 @@ The `uv` commands are canonical and work in PowerShell and Bash:
 | Build monitoring reference | `uv run python -m ticket_router.monitoring.build_reference` | `make build-monitoring-reference` |
 | Monitor the last seven days | `uv run python -m ticket_router.monitoring.run --lookback-days 7` | `make monitor` |
 | Verify planted drift | `uv run python -m ticket_router.monitoring.simulate_drift` | `make simulate-drift` |
+| Run the ingestion flow | `uv run python -m ticket_router.orchestration ingest` | `make flow-ingest` |
+| Run the candidate flow | `uv run python -m ticket_router.orchestration train-candidate` | `make flow-train` |
+| Run the monitoring flow | `uv run python -m ticket_router.orchestration monitor` | `make flow-monitor` |
+| Evaluate controlled retraining | `uv run python -m ticket_router.orchestration retraining` | `make flow-retraining` |
+| Register local Prefect deployments | `uv run python -m ticket_router.orchestration.deploy` | `make prefect-deploy` |
+| Run the fixture smoke flow | `uv run python -m ticket_router.orchestration.fixture_flow` | `make fixture-flow` |
 | Remove project caches | `uv run python scripts/clean.py` | `make clean` |
 
 Run the complete Stage 1 quality gate:
@@ -212,7 +218,8 @@ parameters, or committed documentation.
 - `src/ticket_router/db`: SQLAlchemy models, sessions, repositories, privacy hashes, and migrations.
 - `src/ticket_router/monitoring`: aggregate feature extraction, Evidently drift reports,
   delayed-label quality, and multi-signal alert policy.
-- `src/ticket_router/orchestration`: future Prefect flows.
+- `src/ticket_router/orchestration`: local Prefect flows, retraining policy, dataset versioning,
+  deployment registration, and the immutable candidate/promotion boundary.
 - `src/ticket_router/dashboard`: future Streamlit API client and presentation code.
 
 Dashboard code must call application/API boundaries; modeling code must never import dashboard code.
@@ -247,7 +254,8 @@ manifest contents, and dataset limitations.
 - **Complete:** Stage 8—FastAPI champion inference, feedback contract, metrics, and privacy-safe logs.
 - **Complete:** Stage 9—PostgreSQL schema, Alembic migration, repositories, and API persistence.
 - **Complete:** Stage 10—privacy-safe Evidently monitoring, delayed-label quality, and alert policy.
-- **TODO:** Controlled retraining, Prefect, Streamlit, and Docker Compose.
+- **Complete:** Stage 11—Prefect flows, controlled retraining, data lineage, and local schedules.
+- **TODO:** Streamlit and Docker Compose.
 - **TODO:** GitHub Actions, load tests, benchmark report, and remaining operational documentation.
 
 See `docs/implementation-plan.md` for the complete architecture, lifecycle, acceptance criteria, and
@@ -255,6 +263,8 @@ risk register. Unfinished sections are intentionally labeled and must not be rep
 See `docs/api.md` for champion prerequisites, local startup, endpoint contracts, and curl examples.
 See `docs/database.md` for the schema, migration workflow, reset precautions, and retention policy.
 See `docs/monitoring.md` for feature definitions, thresholds, report interpretation, and commands.
+See `docs/orchestration.md` for flow boundaries, approved retraining input, local Prefect setup,
+schedules, and manual triggering.
 
 ## Results
 

@@ -85,6 +85,8 @@ postgres-data/
 prefect-data/
 docker-volumes/
 .volumes/
+stage11-runtime-*/
+stage11-test-*/
 
 # Generated monitoring, benchmark, load-test, and runtime output
 reports/**
