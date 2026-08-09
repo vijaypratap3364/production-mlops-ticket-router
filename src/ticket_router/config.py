@@ -172,6 +172,8 @@ class Settings(BaseSettings):
     api_maximum_subject_characters: int = Field(default=2000, gt=0, le=2000)
     api_maximum_body_characters: int = Field(default=20000, gt=0, le=20000)
     api_minimum_usable_characters: int = Field(default=1, gt=0)
+    dashboard_api_url: str = "http://127.0.0.1:8000"
+    dashboard_request_timeout_seconds: float = Field(default=10.0, gt=0.0, le=60.0)
     store_raw_ticket_content: bool = False
     store_redacted_ticket_text: bool = False
     input_hmac_secret: SecretStr | None = None

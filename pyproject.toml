@@ -50,6 +50,8 @@ orchestration = [
   "prefect",
 ]
 dashboard = [
+  "httpx",
+  "pandas",
   "streamlit",
 ]
 

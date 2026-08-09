@@ -1,6 +1,6 @@
 UV ?= uv
 
-.PHONY: install format format-check lint typecheck test check download-data normalize-data analyze-data prepare-data train-baselines experiment-candidates evaluate-final recover-final-registration promote-candidate api-dev db-upgrade db-downgrade db-revision test-db-integration build-monitoring-reference monitor simulate-drift flow-ingest flow-train flow-monitor flow-retraining prefect-deploy fixture-flow clean
+.PHONY: install format format-check lint typecheck test check download-data normalize-data analyze-data prepare-data train-baselines experiment-candidates evaluate-final recover-final-registration promote-candidate api-dev dashboard-dev db-upgrade db-downgrade db-revision test-db-integration build-monitoring-reference monitor simulate-drift flow-ingest flow-train flow-monitor flow-retraining prefect-deploy fixture-flow clean
 
 install:
 	$(UV) sync --locked --all-groups
@@ -52,6 +52,9 @@ promote-candidate:
 
 api-dev:
 	$(UV) run uvicorn ticket_router.api.main:app --host 127.0.0.1 --port 8000
+
+dashboard-dev:
+	$(UV) run streamlit run src/ticket_router/dashboard/app.py --server.address 127.0.0.1 --server.port 8501
 
 db-upgrade:
 	$(UV) run alembic upgrade head

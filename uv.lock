@@ -2010,6 +2010,8 @@ dependencies = [
 
 [package.dev-dependencies]
 dashboard = [
+    { name = "httpx" },
+    { name = "pandas" },
     { name = "streamlit" },
 ]
 development = [
@@ -2051,7 +2053,11 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-dashboard = [{ name = "streamlit" }]
+dashboard = [
+    { name = "httpx" },
+    { name = "pandas" },
+    { name = "streamlit" },
+]
 development = [
     { name = "httpx" },
     { name = "mypy" },
