@@ -4,9 +4,9 @@ A local-first, production-style machine-learning system for routing English cust
 tickets to the correct support queue. The project is designed as a public portfolio repository
 and uses only open-source libraries and local services.
 
-> **Current status:** Stage 11 local Prefect orchestration and controlled candidate retraining.
-> Explicit champion promotion is available but has not been approved. The dashboard and Compose
-> integration remain intentionally unfinished.
+> **Current status:** Stage 12 local Streamlit demonstration through FastAPI.
+> Explicit champion promotion is available but has not been approved. Docker Compose integration
+> remains intentionally unfinished.
 
 ## Scope
 
@@ -117,6 +117,15 @@ revision that future ingestion code must use.
 - HMAC-SHA-256 text fingerprints when a secret is configured, no raw subject/body columns, and
   explicit opt-in redacted-text storage with a documented retention policy.
 
+## Stage 12 capabilities
+
+- Five-page Streamlit interface for single and batch routing, feedback, monitoring, model lineage,
+  and system readiness; the dashboard calls FastAPI and never loads a model or database directly.
+- Typed reusable HTTP client, bounded CSV validation, top-three calibrated results, privacy-safe
+  downloadable batch output, loading states, and sanitized failure messages.
+- Read-only FastAPI operational projections for monitoring/retraining history plus optional champion
+  lineage metadata; absent metrics and runs are displayed as unavailable rather than fabricated.
+
 ## Prerequisites
 
 - Git
@@ -170,6 +179,7 @@ The `uv` commands are canonical and work in PowerShell and Bash:
 | Final evaluation and registration | `uv run python -m ticket_router.registry.evaluate_final` | `make evaluate-final` |
 | Explicit candidate promotion | `uv run python -m ticket_router.registry.promote --approve` | `make promote-candidate` |
 | Run the local inference API | `uv run uvicorn ticket_router.api.main:app --host 127.0.0.1 --port 8000` | `make api-dev` |
+| Run the local dashboard | `uv run streamlit run src/ticket_router/dashboard/app.py --server.address 127.0.0.1 --server.port 8501` | `make dashboard-dev` |
 | Apply application migrations | `uv run alembic upgrade head` | `make db-upgrade` |
 | Revert one migration | `uv run alembic downgrade -1` | `make db-downgrade` |
 | Build monitoring reference | `uv run python -m ticket_router.monitoring.build_reference` | `make build-monitoring-reference` |
@@ -220,7 +230,7 @@ parameters, or committed documentation.
   delayed-label quality, and multi-signal alert policy.
 - `src/ticket_router/orchestration`: local Prefect flows, retraining policy, dataset versioning,
   deployment registration, and the immutable candidate/promotion boundary.
-- `src/ticket_router/dashboard`: future Streamlit API client and presentation code.
+- `src/ticket_router/dashboard`: Streamlit pages, typed FastAPI client, and upload validation only.
 
 Dashboard code must call application/API boundaries; modeling code must never import dashboard code.
 
@@ -255,7 +265,8 @@ manifest contents, and dataset limitations.
 - **Complete:** Stage 9—PostgreSQL schema, Alembic migration, repositories, and API persistence.
 - **Complete:** Stage 10—privacy-safe Evidently monitoring, delayed-label quality, and alert policy.
 - **Complete:** Stage 11—Prefect flows, controlled retraining, data lineage, and local schedules.
-- **TODO:** Streamlit and Docker Compose.
+- **Complete:** Stage 12—Streamlit prediction, feedback, monitoring, model, and status views.
+- **TODO:** Docker Compose.
 - **TODO:** GitHub Actions, load tests, benchmark report, and remaining operational documentation.
 
 See `docs/implementation-plan.md` for the complete architecture, lifecycle, acceptance criteria, and
@@ -265,6 +276,8 @@ See `docs/database.md` for the schema, migration workflow, reset precautions, an
 See `docs/monitoring.md` for feature definitions, thresholds, report interpretation, and commands.
 See `docs/orchestration.md` for flow boundaries, approved retraining input, local Prefect setup,
 schedules, and manual triggering.
+See `docs/dashboard.md` for the API-only dashboard boundary, local startup, CSV contract, and data
+availability behavior.
 
 ## Results
 

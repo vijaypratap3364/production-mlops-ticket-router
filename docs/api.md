@@ -45,6 +45,8 @@ If the champion is absent or cannot load, the process stays live: `/health` retu
 curl --fail http://127.0.0.1:8000/health
 curl --fail http://127.0.0.1:8000/ready
 curl --fail http://127.0.0.1:8000/model
+curl --fail "http://127.0.0.1:8000/monitoring/history?limit=30"
+curl --fail http://127.0.0.1:8000/system/status
 
 curl --fail --request POST http://127.0.0.1:8000/predict \
   --header "Content-Type: application/json" \
@@ -62,6 +64,13 @@ curl --fail http://127.0.0.1:8000/metrics
 ```
 
 ## Contracts and privacy
+
+`/monitoring/history` and `/system/status` are privacy-safe read models for Streamlit. They expose
+stored aggregate monitoring summaries and operational run metadata only; they never return ticket
+text, text hashes, database credentials, or MLflow artifact contents. When PostgreSQL is not
+configured, history is empty and system status reports `database_status=not_configured`. `/model`
+includes optional registry-backed training hash, test macro F1, model size, and creation time; a
+missing optional value remains null rather than being inferred.
 
 Only `subject` and `body` are predictive inputs. Optional `client_name` and `correlation_id`
 metadata are operational fields and never enter the model. The API uses the shared conservative
