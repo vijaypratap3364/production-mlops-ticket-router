@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from io import StringIO
 from typing import cast
 
@@ -24,6 +25,15 @@ class RegisteredVersion:
     version: str
     run_id: str
     source: str
+
+
+@dataclass(frozen=True)
+class ModelVersionDetails:
+    """Read-only model/run metadata used by presentation adapters."""
+
+    created_at: datetime | None
+    tags: dict[str, str]
+    metrics: dict[str, float]
 
 
 class ModelRegistryService:
@@ -110,6 +120,21 @@ class ModelRegistryService:
     def model_version_tags(self, *, name: str, version: str) -> dict[str, str]:
         model_version = self._client.get_model_version(name, version)
         return dict(model_version.tags or {})
+
+    def model_version_details(self, *, name: str, version: str) -> ModelVersionDetails:
+        """Return registry lineage and immutable run metrics without loading the model again."""
+        model_version = self._client.get_model_version(name, version)
+        run = self._client.get_run(str(model_version.run_id))
+        created_at = (
+            datetime.fromtimestamp(model_version.creation_timestamp / 1000.0, tz=UTC)
+            if model_version.creation_timestamp is not None
+            else None
+        )
+        return ModelVersionDetails(
+            created_at=created_at,
+            tags=dict(model_version.tags or {}),
+            metrics={key: float(value) for key, value in run.data.metrics.items()},
+        )
 
     def set_model_version_tags(
         self,

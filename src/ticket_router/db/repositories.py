@@ -312,6 +312,20 @@ class SQLAlchemyRetrainingRunRepository:
         except SQLAlchemyError as exc:
             raise PersistenceUnavailableError("retraining-run lookup failed") from exc
 
+    def list_recent(self, *, limit: int) -> tuple[RetrainingRun, ...]:
+        if limit <= 0:
+            raise ValueError("retraining-run limit must be positive")
+        statement = (
+            select(RetrainingRunModel)
+            .order_by(RetrainingRunModel.completed_at.desc(), RetrainingRunModel.started_at.desc())
+            .limit(limit)
+        )
+        try:
+            with self._session_factory() as session:
+                return tuple(_retraining_record(model) for model in session.scalars(statement))
+        except SQLAlchemyError as exc:
+            raise PersistenceUnavailableError("retraining-run history lookup failed") from exc
+
 
 def _prediction_model(event: PredictionEvent, *, request_uuid: UUID) -> PredictionEventModel:
     if not set(event.request_metadata).issubset(APPROVED_REQUEST_METADATA_FIELDS):

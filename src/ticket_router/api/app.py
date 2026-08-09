@@ -9,7 +9,7 @@ from time import perf_counter
 from typing import Any
 from uuid import uuid4
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Query, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
 from starlette.concurrency import run_in_threadpool
@@ -24,6 +24,7 @@ from ticket_router.api.errors import (
 )
 from ticket_router.api.metrics import APIMetrics
 from ticket_router.api.model_loader import ChampionLoader, load_champion
+from ticket_router.api.operations import MODEL_CARD_SUMMARY, MODEL_LIMITATIONS, OperationsService
 from ticket_router.api.schemas import (
     BatchPredictionRequest,
     BatchPredictionResponse,
@@ -32,17 +33,22 @@ from ticket_router.api.schemas import (
     FeedbackResponse,
     HealthResponse,
     ModelMetadataResponse,
+    MonitoringHistoryResponse,
     PredictionResponse,
     ReadinessResponse,
+    SystemStatusResponse,
     TicketRequest,
 )
 from ticket_router.api.service import LoadedChampion, PredictionService
 from ticket_router.config import Settings
 from ticket_router.db.connectivity import DatabaseProbe, SQLAlchemyDatabaseProbe
 from ticket_router.db.contracts import PredictionFeedbackRepository
+from ticket_router.db.exceptions import PersistenceUnavailableError
 from ticket_router.db.repositories import (
     InMemoryPredictionFeedbackRepository,
+    SQLAlchemyMonitoringRunRepository,
     SQLAlchemyPredictionFeedbackRepository,
+    SQLAlchemyRetrainingRunRepository,
 )
 from ticket_router.logging_config import configure_logging, get_logger
 
@@ -50,7 +56,17 @@ StoreFactory = Callable[[], PredictionFeedbackRepository]
 DatabaseProbeFactory = Callable[[str], DatabaseProbe]
 DatabaseStoreFactory = Callable[[DatabaseProbe], PredictionFeedbackRepository]
 KNOWN_ROUTES = frozenset(
-    {"/health", "/ready", "/model", "/predict", "/predict/batch", "/feedback", "/metrics"}
+    {
+        "/health",
+        "/ready",
+        "/model",
+        "/predict",
+        "/predict/batch",
+        "/feedback",
+        "/monitoring/history",
+        "/system/status",
+        "/metrics",
+    }
 )
 
 
@@ -61,6 +77,8 @@ class RuntimeState:
     prediction_service: PredictionService | None = None
     store: PredictionFeedbackRepository | None = None
     database_probe: DatabaseProbe | None = None
+    operations_service: OperationsService | None = None
+    database_mode: str = "memory"
     model_ready: bool = False
     database_ready: bool = False
 
@@ -93,20 +111,36 @@ def create_app(
             else None
         )
         if database_url is not None:
+            runtime.database_mode = "postgresql"
             try:
                 runtime.database_probe = database_probe_factory(database_url)
                 await run_in_threadpool(runtime.database_probe.connect)
                 runtime.database_ready = runtime.database_probe.ready
                 factory = database_store_factory or _sqlalchemy_store
                 runtime.store = factory(runtime.database_probe)
+                runtime.operations_service = OperationsService(
+                    monitoring_runs=SQLAlchemyMonitoringRunRepository(
+                        runtime.database_probe.session_factory
+                    ),
+                    retraining_runs=SQLAlchemyRetrainingRunRepository(
+                        runtime.database_probe.session_factory
+                    ),
+                )
             except Exception as exc:
                 runtime.database_ready = False
+                runtime.database_mode = "required_unavailable"
                 logger.error("database_startup_failed", error_type=type(exc).__name__)
         elif active_settings.database_required:
+            runtime.database_mode = "required_unavailable"
             logger.error("database_startup_failed", error_type="MissingDatabaseUrl")
         else:
+            runtime.database_mode = "memory"
             runtime.database_ready = True
             runtime.store = store_factory()
+            runtime.operations_service = OperationsService(
+                monitoring_runs=None,
+                retraining_runs=None,
+            )
         try:
             runtime.champion = await run_in_threadpool(champion_loader, active_settings)
             runtime.model_ready = True
@@ -142,6 +176,7 @@ def create_app(
             if runtime.database_probe is not None:
                 await run_in_threadpool(runtime.database_probe.close)
             runtime.prediction_service = None
+            runtime.operations_service = None
             runtime.model_ready = False
             runtime.database_ready = False
             logger.info("api_shutdown_complete")
@@ -260,6 +295,55 @@ def create_app(
             load_timestamp=champion.loaded_at,
             input_contract=champion.input_contract,
             labels=list(champion.labels),
+            training_data_hash=champion.training_data_hash,
+            macro_f1=champion.macro_f1,
+            model_size_bytes=champion.model_size_bytes,
+            created_at=champion.created_at,
+            model_card_summary=MODEL_CARD_SUMMARY,
+            limitations=list(MODEL_LIMITATIONS),
+        )
+
+    @app.get("/monitoring/history", response_model=MonitoringHistoryResponse)
+    async def monitoring_history(
+        limit: int = Query(default=30, ge=1, le=100),
+    ) -> MonitoringHistoryResponse:
+        service = runtime.operations_service or OperationsService(
+            monitoring_runs=None,
+            retraining_runs=None,
+        )
+        try:
+            return await run_in_threadpool(service.monitoring_history, limit=limit)
+        except PersistenceUnavailableError as exc:
+            raise DatabaseUnavailableError("monitoring history lookup failed") from exc
+
+    @app.get("/system/status", response_model=SystemStatusResponse)
+    async def system_status() -> SystemStatusResponse:
+        service = runtime.operations_service or OperationsService(
+            monitoring_runs=None,
+            retraining_runs=None,
+        )
+        operational_store_ready = runtime.database_ready
+        try:
+            monitoring = await run_in_threadpool(service.latest_monitoring_status)
+            retraining = await run_in_threadpool(service.latest_retraining_status)
+        except PersistenceUnavailableError:
+            operational_store_ready = False
+            monitoring = None
+            retraining = None
+        return SystemStatusResponse(
+            api_status="healthy",
+            ready=runtime.ready,
+            database_status=(
+                "not_configured"
+                if runtime.database_mode == "memory"
+                else "ready"
+                if operational_store_ready
+                else "unavailable"
+            ),
+            database_mode=runtime.database_mode,
+            mlflow_model_available=runtime.model_ready,
+            latest_monitoring_run=monitoring,
+            latest_retraining_run=retraining,
         )
 
     @app.post(

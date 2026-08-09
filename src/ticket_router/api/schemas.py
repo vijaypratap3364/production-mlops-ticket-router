@@ -98,6 +98,47 @@ class ModelMetadataResponse(BaseModel):
     load_timestamp: datetime
     input_contract: dict[str, Any]
     labels: list[str]
+    training_data_hash: str | None = None
+    macro_f1: float | None = Field(default=None, ge=0.0, le=1.0)
+    model_size_bytes: int | None = Field(default=None, ge=0)
+    created_at: datetime | None = None
+    model_card_summary: str
+    limitations: list[str]
+
+
+class MonitoringRunResponse(BaseModel):
+    run_id: str
+    status: str
+    completed_at: datetime | None
+    model_version: str | None
+    event_count: int = Field(ge=0)
+    feedback_count: int = Field(ge=0)
+    drift_without_labels: dict[str, Any] | None
+    performance_with_delayed_labels: dict[str, Any] | None
+    predicted_class_distribution: dict[str, int]
+    report_path: str | None
+
+
+class MonitoringHistoryResponse(BaseModel):
+    runs: list[MonitoringRunResponse]
+
+
+class OperationalRunResponse(BaseModel):
+    run_id: str
+    status: str
+    started_at: datetime
+    completed_at: datetime | None
+    details: dict[str, Any]
+
+
+class SystemStatusResponse(BaseModel):
+    api_status: Literal["healthy"]
+    ready: bool
+    database_status: Literal["ready", "unavailable", "not_configured"]
+    database_mode: Literal["postgresql", "memory", "required_unavailable"]
+    mlflow_model_available: bool
+    latest_monitoring_run: OperationalRunResponse | None
+    latest_retraining_run: OperationalRunResponse | None
 
 
 class ErrorDetail(BaseModel):

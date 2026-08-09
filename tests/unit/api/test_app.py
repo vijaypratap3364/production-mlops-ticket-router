@@ -135,6 +135,22 @@ def test_model_metadata(api_client: TestClient) -> None:
     assert response.json()["model_version"] == "7"
     assert response.json()["alias"] == "champion"
     assert response.json()["input_contract"]["predictive_fields"] == ["subject", "body"]
+    assert response.json()["model_card_summary"]
+    assert response.json()["limitations"]
+
+
+def test_dashboard_read_endpoints_are_safe_without_postgresql(api_client: TestClient) -> None:
+    history = api_client.get("/monitoring/history")
+    status = api_client.get("/system/status")
+
+    assert history.status_code == 200
+    assert history.json() == {"runs": []}
+    assert status.status_code == 200
+    assert status.json()["database_mode"] == "memory"
+    assert status.json()["database_status"] == "not_configured"
+    assert status.json()["mlflow_model_available"] is True
+    assert status.json()["latest_monitoring_run"] is None
+    assert status.json()["latest_retraining_run"] is None
 
 
 def test_missing_champion_keeps_process_live_but_not_ready(api_settings: Settings) -> None:

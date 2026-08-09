@@ -67,6 +67,10 @@ class LoadedChampion:
     loaded_at: datetime
     labels: tuple[str, ...]
     input_contract: dict[str, object]
+    training_data_hash: str | None = None
+    macro_f1: float | None = None
+    model_size_bytes: int | None = None
+    created_at: datetime | None = None
 
 
 class PredictionService:

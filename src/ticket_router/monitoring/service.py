@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -106,6 +107,9 @@ def execute_monitoring_run(
         "reference_data_sha256": reference_manifest.reference_data_sha256,
         "event_count": len(current_events),
         "feedback_count": len(labeled_events),
+        "current_predicted_class_distribution": dict(
+            sorted(Counter(event.predicted_queue for event in current_events).items())
+        ),
         "drift_without_labels": drift.to_dict() if drift is not None else None,
         "performance_with_delayed_labels": quality.to_dict(),
         "reference_macro_f1": reference_quality,

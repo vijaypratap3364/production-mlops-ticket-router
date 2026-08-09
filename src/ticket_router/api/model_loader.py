@@ -8,6 +8,7 @@ from typing import cast
 
 import mlflow
 import numpy as np
+from mlflow.exceptions import MlflowException
 
 from ticket_router.api.errors import ModelUnavailableError
 from ticket_router.api.service import LoadedChampion, ProbabilisticPredictor
@@ -60,8 +61,23 @@ def load_champion(settings: Settings) -> LoadedChampion:
         "subject_max_length": settings.api_settings.maximum_subject_characters,
         "body_max_length": settings.api_settings.maximum_body_characters,
         "minimum_usable_characters": settings.api_settings.minimum_usable_characters,
+        "maximum_batch_size": settings.api_settings.maximum_batch_size,
         "probabilities": "calibrated",
     }
+    training_data_hash: str | None = None
+    macro_f1: float | None = None
+    model_size_bytes: int | None = None
+    created_at: datetime | None = None
+    try:
+        details = registry.model_version_details(name=name, version=resolved.version)
+        training_data_hash = details.tags.get("combined_training_data_sha256")
+        macro_f1 = details.metrics.get("test_macro_f1")
+        raw_size = details.metrics.get("test_serialized_model_size_bytes")
+        model_size_bytes = int(raw_size) if raw_size is not None else None
+        created_at = details.created_at
+    except (MlflowException, OSError, ValueError):
+        # Model serving remains available when optional presentation metadata is missing.
+        pass
     return LoadedChampion(
         model=predictor,
         model_name=name,
@@ -70,4 +86,8 @@ def load_champion(settings: Settings) -> LoadedChampion:
         loaded_at=datetime.now(UTC),
         labels=labels,
         input_contract=contract,
+        training_data_hash=training_data_hash,
+        macro_f1=macro_f1,
+        model_size_bytes=model_size_bytes,
+        created_at=created_at,
     )

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from datetime import UTC, datetime
 
 import numpy as np
 import pytest
@@ -10,7 +11,11 @@ import pytest
 from ticket_router.api.errors import ModelUnavailableError
 from ticket_router.api.model_loader import load_champion
 from ticket_router.config import Settings
-from ticket_router.registry.service import ModelRegistryService, RegisteredVersion
+from ticket_router.registry.service import (
+    ModelRegistryService,
+    ModelVersionDetails,
+    RegisteredVersion,
+)
 
 
 class LoaderFixtureModel:
@@ -21,6 +26,22 @@ class LoaderFixtureModel:
 
     def predict_proba(self, values: Sequence[str]) -> object:
         return np.asarray([[0.8, 0.2]] * len(values), dtype=np.float64)
+
+
+@pytest.fixture(autouse=True)
+def model_version_details(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        ModelRegistryService,
+        "model_version_details",
+        lambda _self, *, name, version: ModelVersionDetails(
+            created_at=datetime(2026, 8, 8, tzinfo=UTC),
+            tags={"combined_training_data_sha256": "a" * 64},
+            metrics={
+                "test_macro_f1": 0.7,
+                "test_serialized_model_size_bytes": 1024.0,
+            },
+        ),
+    )
 
 
 def test_loader_resolves_alias_then_loads_numeric_version(
@@ -58,6 +79,9 @@ def test_loader_resolves_alias_then_loads_numeric_version(
     ]
     assert champion.model_version == "12"
     assert champion.labels == ("Billing", "Technical")
+    assert champion.training_data_hash == "a" * 64
+    assert champion.macro_f1 == pytest.approx(0.7)
+    assert champion.model_size_bytes == 1024
 
 
 def test_loader_rejects_missing_champion_alias(

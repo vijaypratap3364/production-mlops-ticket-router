@@ -45,6 +45,9 @@ class CapturingRunRepository:
     def get(self, run_id: str) -> MonitoringRun | None:
         return self.saved if self.saved and self.saved.run_id == run_id else None
 
+    def list_recent(self, *, limit: int) -> tuple[MonitoringRun, ...]:
+        return (self.saved,) if self.saved is not None and limit > 0 else ()
+
 
 def test_insufficient_run_writes_summary_and_database_record(
     tmp_path: Path,
@@ -92,3 +95,4 @@ def test_insufficient_run_writes_summary_and_database_record(
     assert repository.saved is not None
     assert repository.saved.drift_status == "insufficient_data"
     assert repository.saved.summary["event_count"] == 0
+    assert repository.saved.summary["current_predicted_class_distribution"] == {}
