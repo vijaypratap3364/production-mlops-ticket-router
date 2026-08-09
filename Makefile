@@ -1,6 +1,6 @@
 UV ?= uv
 
-.PHONY: install format format-check lint typecheck test check download-data normalize-data analyze-data prepare-data train-baselines experiment-candidates evaluate-final recover-final-registration promote-candidate api-dev db-upgrade db-downgrade db-revision test-db-integration build-monitoring-reference monitor simulate-drift clean
+.PHONY: install format format-check lint typecheck test check download-data normalize-data analyze-data prepare-data train-baselines experiment-candidates evaluate-final recover-final-registration promote-candidate api-dev db-upgrade db-downgrade db-revision test-db-integration build-monitoring-reference monitor simulate-drift flow-ingest flow-train flow-monitor flow-retraining prefect-deploy fixture-flow clean
 
 install:
 	$(UV) sync --locked --all-groups
@@ -74,6 +74,24 @@ monitor:
 
 simulate-drift:
 	$(UV) run python -m ticket_router.monitoring.simulate_drift
+
+flow-ingest:
+	$(UV) run python -m ticket_router.orchestration ingest
+
+flow-train:
+	$(UV) run python -m ticket_router.orchestration train-candidate
+
+flow-monitor:
+	$(UV) run python -m ticket_router.orchestration monitor
+
+flow-retraining:
+	$(UV) run python -m ticket_router.orchestration retraining
+
+prefect-deploy:
+	$(UV) run python -m ticket_router.orchestration.deploy
+
+fixture-flow:
+	$(UV) run python -m ticket_router.orchestration.fixture_flow
 
 clean:
 	$(UV) run python scripts/clean.py

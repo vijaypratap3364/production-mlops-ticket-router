@@ -201,6 +201,20 @@ class SQLAlchemyMonitoringRunRepository:
         except SQLAlchemyError as exc:
             raise PersistenceUnavailableError("monitoring-run lookup failed") from exc
 
+    def list_recent(self, *, limit: int) -> tuple[MonitoringRun, ...]:
+        if limit <= 0:
+            raise ValueError("monitoring-run limit must be positive")
+        statement = (
+            select(MonitoringRunModel)
+            .order_by(MonitoringRunModel.completed_at.desc(), MonitoringRunModel.started_at.desc())
+            .limit(limit)
+        )
+        try:
+            with self._session_factory() as session:
+                return tuple(_monitoring_record(model) for model in session.scalars(statement))
+        except SQLAlchemyError as exc:
+            raise PersistenceUnavailableError("monitoring-run history lookup failed") from exc
+
 
 class SQLAlchemyMonitoringDataRepository:
     """Read bounded privacy-safe prediction windows and their delayed labels."""

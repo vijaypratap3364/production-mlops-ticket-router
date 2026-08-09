@@ -59,6 +59,27 @@ class ModelRegistryService:
             source=str(model_version.source),
         )
 
+    def find_version_by_run_id(self, *, name: str, run_id: str) -> RegisteredVersion | None:
+        """Find an existing version for a run so workflow retries do not duplicate it."""
+        try:
+            versions = self._client.search_model_versions(f"name = '{name}'")
+        except MlflowException:
+            return None
+        matching = [version for version in versions if str(version.run_id or "") == run_id]
+        if not matching:
+            return None
+        version = max(matching, key=lambda item: int(item.version))
+        return RegisteredVersion(
+            name=name,
+            version=str(version.version),
+            run_id=run_id,
+            source=str(version.source),
+        )
+
+    def assign_alias(self, *, name: str, alias: str, version: str) -> None:
+        """Assign one non-champion alias to a known immutable model version."""
+        self._client.set_registered_model_alias(name, alias, version)
+
     def resolve_alias(self, *, name: str, alias: str) -> RegisteredVersion | None:
         """Resolve an alias to its immutable numeric version, or return no target."""
         try:
