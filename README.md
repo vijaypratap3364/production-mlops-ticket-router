@@ -4,9 +4,8 @@ A local-first, production-style machine-learning system for routing English cust
 tickets to the correct support queue. The project is designed as a public portfolio repository
 and uses only open-source libraries and local services.
 
-> **Current status:** Stage 12 local Streamlit demonstration through FastAPI.
-> Explicit champion promotion is available but has not been approved. Docker Compose integration
-> remains intentionally unfinished.
+> **Current status:** Stage 13 local Docker Compose packaging and smoke-test workflow.
+> Explicit champion promotion remains a separate bootstrap action; no public deployment is created.
 
 ## Scope
 
@@ -126,6 +125,15 @@ revision that future ingestion code must use.
 - Read-only FastAPI operational projections for monitoring/retraining history plus optional champion
   lineage metadata; absent metrics and runs are displayed as unavailable rather than fabricated.
 
+## Stage 13 capabilities
+
+- Non-root slim Python images for FastAPI, Streamlit, MLflow, and the shared Prefect/bootstrap worker,
+  using locked dependency groups and dependency-layer caching.
+- Localhost-bound Compose services with PostgreSQL/MLflow named volumes, health-gated migrations,
+  API/dashboard readiness, and optional Prefect, bootstrap, and smoke profiles.
+- Explicit idempotent bootstrap with no training in normal API startup, plus a synthetic prediction,
+  feedback, persistence, and dashboard-connectivity smoke protocol.
+
 ## Prerequisites
 
 - Git
@@ -180,6 +188,10 @@ The `uv` commands are canonical and work in PowerShell and Bash:
 | Explicit candidate promotion | `uv run python -m ticket_router.registry.promote --approve` | `make promote-candidate` |
 | Run the local inference API | `uv run uvicorn ticket_router.api.main:app --host 127.0.0.1 --port 8000` | `make api-dev` |
 | Run the local dashboard | `uv run streamlit run src/ticket_router/dashboard/app.py --server.address 127.0.0.1 --server.port 8501` | `make dashboard-dev` |
+| Build all local images | `docker compose build api dashboard mlflow prefect-worker` | `make docker-build` |
+| Start core containers | `docker compose up -d postgres mlflow migrate api dashboard` | `make docker-up` |
+| Run explicit bootstrap | `docker compose --profile bootstrap run --rm bootstrap` | `make bootstrap` |
+| Run Compose smoke test | `docker compose --profile smoke run --rm smoke-test` | `make docker-smoke` |
 | Apply application migrations | `uv run alembic upgrade head` | `make db-upgrade` |
 | Revert one migration | `uv run alembic downgrade -1` | `make db-downgrade` |
 | Build monitoring reference | `uv run python -m ticket_router.monitoring.build_reference` | `make build-monitoring-reference` |
@@ -266,7 +278,7 @@ manifest contents, and dataset limitations.
 - **Complete:** Stage 10—privacy-safe Evidently monitoring, delayed-label quality, and alert policy.
 - **Complete:** Stage 11—Prefect flows, controlled retraining, data lineage, and local schedules.
 - **Complete:** Stage 12—Streamlit prediction, feedback, monitoring, model, and status views.
-- **TODO:** Docker Compose.
+- **Complete:** Stage 13—Docker images, Compose stack/profiles, bootstrap, and smoke protocol.
 - **TODO:** GitHub Actions, load tests, benchmark report, and remaining operational documentation.
 
 See `docs/implementation-plan.md` for the complete architecture, lifecycle, acceptance criteria, and
@@ -278,6 +290,8 @@ See `docs/orchestration.md` for flow boundaries, approved retraining input, loca
 schedules, and manual triggering.
 See `docs/dashboard.md` for the API-only dashboard boundary, local startup, CSV contract, and data
 availability behavior.
+See `docs/docker.md` for fresh-machine Compose startup, explicit bootstrap, smoke verification,
+persistence, optional Prefect services, and local-only service addresses.
 
 ## Results
 
