@@ -29,7 +29,6 @@ from ticket_router.api.schemas import (
     TicketRequest,
 )
 from ticket_router.config import APISettings, TextPreprocessingSettings
-from ticket_router.data.normalize import combine_ticket_text
 from ticket_router.db.contracts import (
     FeedbackEvent,
     PredictionEvent,
@@ -41,7 +40,7 @@ from ticket_router.db.exceptions import (
     PredictionNotFoundError,
 )
 from ticket_router.db.privacy import text_fingerprint
-from ticket_router.features.text import preprocess_model_text
+from ticket_router.features.text import combine_ticket_text, preprocess_model_text
 from ticket_router.logging_config import get_logger
 from ticket_router.monitoring.features import derive_text_monitoring_features
 

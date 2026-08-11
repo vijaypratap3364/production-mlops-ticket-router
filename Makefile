@@ -1,6 +1,7 @@
 UV ?= uv
+DOCKER_COMPOSE ?= docker compose
 
-.PHONY: install format format-check lint typecheck test check download-data normalize-data analyze-data prepare-data train-baselines experiment-candidates evaluate-final recover-final-registration promote-candidate api-dev dashboard-dev db-upgrade db-downgrade db-revision test-db-integration build-monitoring-reference monitor simulate-drift flow-ingest flow-train flow-monitor flow-retraining prefect-deploy fixture-flow clean
+.PHONY: install format format-check lint typecheck test check download-data normalize-data analyze-data prepare-data train-baselines experiment-candidates evaluate-final recover-final-registration promote-candidate api-dev dashboard-dev db-upgrade db-downgrade db-revision test-db-integration build-monitoring-reference monitor retrain simulate-drift flow-ingest flow-train flow-monitor flow-retraining prefect-deploy fixture-flow docker-build docker-up docker-up-orchestration docker-down docker-logs docker-status docker-smoke docker-monitor docker-retrain migrate bootstrap clean
 
 install:
 	$(UV) sync --locked --all-groups
@@ -75,6 +76,9 @@ build-monitoring-reference:
 monitor:
 	$(UV) run python -m ticket_router.monitoring.run --lookback-days 7
 
+retrain:
+	$(UV) run python -m ticket_router.orchestration retraining
+
 simulate-drift:
 	$(UV) run python -m ticket_router.monitoring.simulate_drift
 
@@ -95,6 +99,40 @@ prefect-deploy:
 
 fixture-flow:
 	$(UV) run python -m ticket_router.orchestration.fixture_flow
+
+docker-build:
+	$(DOCKER_COMPOSE) build api dashboard mlflow prefect-worker
+
+docker-up:
+	$(DOCKER_COMPOSE) up -d postgres mlflow migrate api dashboard
+
+docker-up-orchestration:
+	$(DOCKER_COMPOSE) --profile orchestration up -d
+
+docker-down:
+	$(DOCKER_COMPOSE) down
+
+docker-logs:
+	$(DOCKER_COMPOSE) logs --follow --tail=200
+
+docker-status:
+	$(DOCKER_COMPOSE) ps
+
+migrate:
+	$(DOCKER_COMPOSE) run --rm migrate
+
+bootstrap:
+	$(DOCKER_COMPOSE) --profile bootstrap run --rm bootstrap
+	$(DOCKER_COMPOSE) restart api
+
+docker-smoke:
+	$(DOCKER_COMPOSE) --profile smoke run --rm smoke-test
+
+docker-monitor:
+	$(DOCKER_COMPOSE) --profile orchestration exec prefect-worker python -m ticket_router.orchestration monitor
+
+docker-retrain:
+	$(DOCKER_COMPOSE) --profile orchestration exec prefect-worker python -m ticket_router.orchestration retraining
 
 clean:
 	$(UV) run python scripts/clean.py

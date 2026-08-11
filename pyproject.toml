@@ -47,12 +47,27 @@ monitoring = [
   "evidently",
 ]
 orchestration = [
+  "asyncpg",
   "prefect",
 ]
 dashboard = [
   "httpx",
   "pandas",
   "streamlit",
+]
+api = [
+  "alembic",
+  "fastapi",
+  "mlflow",
+  "prometheus-client",
+  "psycopg[binary]",
+  "scikit-learn",
+  "sqlalchemy",
+  "uvicorn[standard]",
+]
+mlflow-server = [
+  "mlflow",
+  "psycopg2-binary",
 ]
 
 [tool.uv]

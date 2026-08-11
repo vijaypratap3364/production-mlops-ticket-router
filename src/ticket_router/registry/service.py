@@ -51,8 +51,13 @@ class ModelRegistryService:
         candidate_alias: str,
         tags: Mapping[str, str],
     ) -> RegisteredVersion:
-        """Create a version, attach lineage tags, and move only the candidate alias."""
+        """Create or reuse a run's version, attach tags, and move only candidate."""
         self._ensure_registered_model(name)
+        existing = self.find_version_by_run_id(name=name, run_id=run_id)
+        if existing is not None:
+            self.set_model_version_tags(name=name, version=existing.version, tags=tags)
+            self._client.set_registered_model_alias(name, candidate_alias, existing.version)
+            return existing
         with redirect_stdout(StringIO()), redirect_stderr(StringIO()):
             model_version = mlflow.register_model(
                 model_uri=model_uri,

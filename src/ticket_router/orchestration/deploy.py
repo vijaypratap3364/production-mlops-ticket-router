@@ -60,12 +60,10 @@ def register_deployments(config: OrchestrationConfig) -> tuple[str, ...]:
     }
     identifiers: list[str] = []
     for spec in deployment_specs(config):
-        deployment_id = flows[spec.flow_name].deploy(
+        deployment = flows[spec.flow_name].to_deployment(
             spec.name,
             work_pool_name=config.runtime.work_pool_name,
             work_queue_name=config.runtime.work_queue_name,
-            build=False,
-            push=False,
             schedule=(
                 CronSchedule(cron=spec.cron, timezone=spec.timezone)
                 if spec.cron is not None
@@ -73,8 +71,8 @@ def register_deployments(config: OrchestrationConfig) -> tuple[str, ...]:
             ),
             paused=spec.paused,
             tags=["ticket-router", "local", spec.flow_name],
-            print_next_steps=False,
         )
+        deployment_id = deployment.apply()
         identifiers.append(str(deployment_id))
     return tuple(identifiers)
 

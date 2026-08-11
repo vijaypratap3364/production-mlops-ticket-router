@@ -1,0 +1,24 @@
+services:
+  api:
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: DEBUG
+      PYTHONPATH: /workspace/src
+    volumes:
+      - ./src:/workspace/src:ro
+
+  dashboard:
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: DEBUG
+      PYTHONPATH: /workspace/src
+    volumes:
+      - ./src:/workspace/src:ro
+
+  prefect-worker:
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: DEBUG
+      PYTHONPATH: /workspace/src
+    volumes:
+      - ./src:/workspace/src:ro

@@ -1,0 +1,292 @@
+name: ${COMPOSE_PROJECT_NAME:-production-mlops-ticket-router}
+
+x-api-build: &api-build
+  context: .
+  dockerfile: docker/api.Dockerfile
+
+x-worker-build: &worker-build
+  context: .
+  dockerfile: docker/worker.Dockerfile
+
+x-application-environment: &application-environment
+  APP_ENV: development
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  GLOBAL_RANDOM_SEED: ${GLOBAL_RANDOM_SEED:-42}
+  DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-ticket_router}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-ticket_router}
+  DATABASE_REQUIRED: "true"
+  MLFLOW_TRACKING_URI: http://mlflow:5000
+  MLFLOW_REGISTERED_MODEL_NAME: ${MLFLOW_REGISTERED_MODEL_NAME:-ticket-router}
+  MLFLOW_MODEL_ALIAS: ${MLFLOW_MODEL_ALIAS:-champion}
+  INPUT_HMAC_SECRET: ${INPUT_HMAC_SECRET:?Set INPUT_HMAC_SECRET in .env}
+  STORE_RAW_TICKET_CONTENT: "false"
+  STORE_REDACTED_TICKET_TEXT: ${STORE_REDACTED_TICKET_TEXT:-false}
+
+x-worker-volumes: &worker-volumes
+  - ./data:/app/data
+  - ./artifacts:/app/artifacts
+  - ./reports:/app/reports
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ticket_router}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-ticket_router}
+      MLFLOW_POSTGRES_DB: ${MLFLOW_POSTGRES_DB:-mlflow}
+      PREFECT_POSTGRES_DB: ${PREFECT_POSTGRES_DB:-prefect}
+    ports:
+      - 127.0.0.1:${POSTGRES_PORT:-5432}:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-databases.sh:/docker-entrypoint-initdb.d/10-init-databases.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks:
+      - ticket_router
+
+  mlflow:
+    image: ticket-router-mlflow:local
+    build:
+      context: .
+      dockerfile: docker/mlflow.Dockerfile
+    restart: unless-stopped
+    command:
+      - mlflow
+      - server
+      - --host
+      - 0.0.0.0
+      - --port
+      - "5000"
+      - --workers
+      - ${MLFLOW_WORKERS:-1}
+      - --backend-store-uri
+      - postgresql+psycopg2://${POSTGRES_USER:-ticket_router}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${MLFLOW_POSTGRES_DB:-mlflow}
+      - --artifacts-destination
+      - ${MLFLOW_ARTIFACT_ROOT:-/mlartifacts}
+      - --serve-artifacts
+    environment:
+      MLFLOW_ARTIFACTS_DESTINATION: ${MLFLOW_ARTIFACT_ROOT:-/mlartifacts}
+      MLFLOW_SERVER_ALLOWED_HOSTS: "mlflow:5000,localhost:*,127.0.0.1:*"
+    ports:
+      - 127.0.0.1:${MLFLOW_PORT:-5000}:5000
+    volumes:
+      - mlflow_artifacts:${MLFLOW_ARTIFACT_ROOT:-/mlartifacts}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request as u; u.urlopen('http://127.0.0.1:5000/health', timeout=3).read()
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      - ticket_router
+
+  migrate:
+    image: ticket-router-api:local
+    build: *api-build
+    restart: "no"
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      <<: *application-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ticket_router
+
+  api:
+    image: ticket-router-api:local
+    build: *api-build
+    restart: unless-stopped
+    environment:
+      <<: *application-environment
+      API_HOST: 0.0.0.0
+      API_PORT: 8000
+    ports:
+      - 127.0.0.1:${API_PORT:-8000}:8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mlflow:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request as u; u.urlopen('http://127.0.0.1:8000/health', timeout=3).read()
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - ticket_router
+
+  dashboard:
+    image: ticket-router-dashboard:local
+    build:
+      context: .
+      dockerfile: docker/dashboard.Dockerfile
+    restart: unless-stopped
+    environment:
+      APP_ENV: development
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DASHBOARD_API_URL: http://api:8000
+      DASHBOARD_REQUEST_TIMEOUT_SECONDS: ${DASHBOARD_REQUEST_TIMEOUT_SECONDS:-10}
+    ports:
+      - 127.0.0.1:${STREAMLIT_PORT:-8501}:8501
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import os, urllib.request as u; u.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=3).read(); u.urlopen(os.environ['DASHBOARD_API_URL'] + '/health', timeout=3).read()
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - ticket_router
+
+  prefect-server:
+    image: ticket-router-worker:local
+    build: *worker-build
+    profiles: ["orchestration"]
+    restart: unless-stopped
+    command: ["prefect", "server", "start", "--host", "0.0.0.0", "--port", "4200"]
+    environment:
+      PREFECT_API_DATABASE_CONNECTION_URL: postgresql+asyncpg://${POSTGRES_USER:-ticket_router}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${PREFECT_POSTGRES_DB:-prefect}
+      PREFECT_SERVER_ANALYTICS_ENABLED: "false"
+      PREFECT_UI_API_URL: ${PREFECT_UI_API_URL:-http://127.0.0.1:4200/api}
+    ports:
+      - 127.0.0.1:${PREFECT_PORT:-4200}:4200
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request as u; u.urlopen('http://127.0.0.1:4200/api/health', timeout=3).read()
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    networks:
+      - ticket_router
+
+  prefect-init:
+    image: ticket-router-worker:local
+    build: *worker-build
+    profiles: ["orchestration"]
+    restart: "no"
+    command:
+      - /bin/sh
+      - -c
+      - >-
+        prefect work-pool inspect ${PREFECT_WORK_POOL_NAME:-ticket-router-local}
+        >/dev/null 2>&1 || prefect work-pool create --type process
+        ${PREFECT_WORK_POOL_NAME:-ticket-router-local};
+        python -m ticket_router.orchestration.deploy
+    environment:
+      PREFECT_API_URL: http://prefect-server:4200/api
+    depends_on:
+      prefect-server:
+        condition: service_healthy
+    networks:
+      - ticket_router
+
+  prefect-worker:
+    image: ticket-router-worker:local
+    build: *worker-build
+    profiles: ["orchestration"]
+    restart: unless-stopped
+    command:
+      - prefect
+      - worker
+      - start
+      - --pool
+      - ${PREFECT_WORK_POOL_NAME:-ticket-router-local}
+    environment:
+      <<: *application-environment
+      PREFECT_API_URL: http://prefect-server:4200/api
+      PREFECT_SERVER_ANALYTICS_ENABLED: "false"
+    volumes: *worker-volumes
+    depends_on:
+      mlflow:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      prefect-init:
+        condition: service_completed_successfully
+    networks:
+      - ticket_router
+
+  bootstrap:
+    image: ticket-router-worker:local
+    build: *worker-build
+    profiles: ["bootstrap"]
+    restart: "no"
+    command:
+      - python
+      - -m
+      - ticket_router.orchestration.bootstrap
+      - --promote-champion
+    environment:
+      <<: *application-environment
+    volumes: *worker-volumes
+    depends_on:
+      mlflow:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - ticket_router
+
+  smoke-test:
+    image: ticket-router-worker:local
+    build: *worker-build
+    profiles: ["smoke"]
+    restart: "no"
+    command: ["python", "/app/scripts/compose_smoke.py"]
+    environment:
+      API_BASE_URL: http://api:8000
+      DASHBOARD_BASE_URL: http://dashboard:8501
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-ticket_router}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:-ticket_router}
+      SMOKE_READY_TIMEOUT_SECONDS: ${SMOKE_READY_TIMEOUT_SECONDS:-120}
+    depends_on:
+      api:
+        condition: service_healthy
+      dashboard:
+        condition: service_healthy
+    networks:
+      - ticket_router
+
+networks:
+  ticket_router:
+    name: ${COMPOSE_PROJECT_NAME:-production-mlops-ticket-router}-network
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: ${COMPOSE_PROJECT_NAME:-production-mlops-ticket-router}-postgres-data
+  mlflow_artifacts:
+    name: ${COMPOSE_PROJECT_NAME:-production-mlops-ticket-router}-mlflow-artifacts

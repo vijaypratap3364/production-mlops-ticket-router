@@ -13,8 +13,7 @@ from mlflow.exceptions import MlflowException
 from ticket_router.api.errors import ModelUnavailableError
 from ticket_router.api.service import LoadedChampion, ProbabilisticPredictor
 from ticket_router.config import Settings
-from ticket_router.data.normalize import combine_ticket_text
-from ticket_router.features.text import preprocess_model_text
+from ticket_router.features.text import combine_ticket_text, preprocess_model_text
 from ticket_router.registry.service import ModelRegistryService
 
 ChampionLoader = Callable[[Settings], LoadedChampion]

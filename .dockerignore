@@ -1,5 +1,7 @@
 .git
 .github
+.gitignore
+.pre-commit-config.yaml
 .env
 .env.*
 .venv
@@ -20,6 +22,9 @@ reports
 logs
 work
 outputs
+tmp
+stage*-runtime-*
+stage*-test-*
 pgdata
 postgres-data
 prefect-data
@@ -27,4 +32,4 @@ docker-volumes
 .volumes
 docs
 tests
-
+compose*.yaml

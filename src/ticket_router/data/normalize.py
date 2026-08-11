@@ -24,6 +24,7 @@ from ticket_router.data.manifests import (
     RawDataManifest,
     get_git_version,
 )
+from ticket_router.features.text import combine_ticket_text as combine_ticket_text
 from ticket_router.hashing import sha256_file, sha256_json
 from ticket_router.logging_config import configure_logging, get_logger
 
@@ -76,11 +77,6 @@ def normalize_nullable_text(value: object) -> str | None:
     if normalized.casefold() in NULL_REPRESENTATIONS:
         return None
     return normalized
-
-
-def combine_ticket_text(subject: str | None, body: str | None) -> str:
-    """Create combined text using only the two allowed source fields."""
-    return f"[SUBJECT] {subject or ''}\n[BODY] {body or ''}".strip()
 
 
 def stable_ticket_record_id(

@@ -14,6 +14,11 @@ WHITESPACE_PATTERN = re.compile(r"\s+")
 TRAILING_URL_PUNCTUATION = ".,!?;:"
 
 
+def combine_ticket_text(subject: str | None, body: str | None) -> str:
+    """Create model input using only the two approved source fields."""
+    return f"[SUBJECT] {subject or ''}\n[BODY] {body or ''}".strip()
+
+
 def preprocess_model_text(value: str, settings: TextPreprocessingSettings) -> str:
     """Normalize and mask text without learning vocabulary or deleting punctuation."""
     cleaned = unicodedata.normalize(settings.unicode_normalization, value)
