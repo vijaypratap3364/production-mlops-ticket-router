@@ -60,6 +60,24 @@ def test_candidate_registration_alias_promotion_and_champion_loading(tmp_path: P
         assert existing == registered
         assert service.resolve_alias(name=registered.name, alias="champion") is None
 
+        retried = service.register_candidate(
+            name="fixture-ticket-router",
+            model_uri=f"runs:/{run_id}/model",
+            run_id=run_id,
+            candidate_alias="candidate",
+            tags={"test_macro_f1": "0.81", "recovered": "true"},
+        )
+        versions = mlflow.MlflowClient().search_model_versions("name = 'fixture-ticket-router'")
+        assert retried == registered
+        assert len(versions) == 1
+        assert (
+            service.model_version_tags(
+                name=registered.name,
+                version=registered.version,
+            )["recovered"]
+            == "true"
+        )
+
         service.assign_alias(
             name=registered.name,
             alias="candidate",
