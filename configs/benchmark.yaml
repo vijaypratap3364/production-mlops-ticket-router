@@ -1,0 +1,40 @@
+random_seed: 42
+warmup_iterations: 5
+single_request_iterations: 50
+batch_sizes: [8, 32]
+batch_repetitions: 12
+api_iterations: 40
+api_url: http://127.0.0.1:8000
+api_timeout_seconds: 10.0
+split_manifest_path: data/processed/split_manifest.json
+output_json_path: artifacts/benchmarks/benchmark_results.json
+output_markdown_path: artifacts/benchmarks/benchmark_report.md
+locust_stats_path: artifacts/benchmarks/locust_stats.csv
+reliability_results_path: artifacts/benchmarks/reliability_results.json
+
+load_test:
+  default_users: 3
+  default_spawn_rate: 1.0
+  default_duration_seconds: 30
+  maximum_users: 25
+  maximum_spawn_rate: 10.0
+  maximum_duration_seconds: 300
+  allow_remote_host: false
+  output_prefix: artifacts/benchmarks/locust
+  html_report_path: artifacts/benchmarks/locust_report.html
+
+# Local operational guardrails, declared before Stage 15 measurements.
+# These are targets, not measured or promised production service levels.
+targets:
+  maximum_cold_load_ms: 30000.0
+  maximum_single_request_p95_ms: 50.0
+  maximum_batch_p95_ms_per_item: 10.0
+  minimum_direct_throughput_per_second: 20.0
+  maximum_process_rss_after_load_mib: 2048.0
+  maximum_serialized_model_size_mib: 100.0
+  maximum_api_p95_ms: 250.0
+  maximum_api_response_overhead_p50_ms: 200.0
+  maximum_api_error_rate: 0.0
+  maximum_load_test_p95_ms: 500.0
+  minimum_load_test_throughput_per_second: 1.0
+  maximum_load_test_failure_rate: 0.0

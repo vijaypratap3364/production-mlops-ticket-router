@@ -41,7 +41,7 @@ def test_ci_workflow_has_required_quality_and_build_boundaries() -> None:
     commands = _run_commands(workflow)
     assert "uv run ruff format --check ." in commands
     assert "uv run ruff check ." in commands
-    assert "uv run mypy src tests scripts" in commands
+    assert "uv run mypy src tests scripts load_tests" in commands
     assert "uv run pytest tests/unit" in commands
     assert "uv run pytest -m integration tests/integration --no-cov" in commands
     assert "uv build" in commands

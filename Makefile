@@ -1,7 +1,7 @@
 UV ?= uv
 DOCKER_COMPOSE ?= docker compose
 
-.PHONY: install format format-check lint typecheck test test-unit test-integration test-e2e build-package check download-data normalize-data analyze-data prepare-data train-baselines experiment-candidates evaluate-final recover-final-registration promote-candidate api-dev dashboard-dev db-upgrade db-downgrade db-revision test-db-integration build-monitoring-reference monitor retrain simulate-drift flow-ingest flow-train flow-monitor flow-retraining prefect-deploy fixture-flow docker-build docker-up docker-up-orchestration docker-down docker-logs docker-status docker-smoke docker-monitor docker-retrain migrate bootstrap clean
+.PHONY: install format format-check lint typecheck test test-unit test-integration test-e2e build-package check download-data normalize-data analyze-data prepare-data train-baselines experiment-candidates evaluate-final recover-final-registration promote-candidate api-dev dashboard-dev db-upgrade db-downgrade db-revision test-db-integration build-monitoring-reference monitor retrain simulate-drift flow-ingest flow-train flow-monitor flow-retraining prefect-deploy fixture-flow benchmark model-contract load-test operational-validation operational-validation-disruptions docker-build docker-up docker-up-orchestration docker-down docker-logs docker-status docker-smoke docker-monitor docker-retrain migrate bootstrap clean
 
 install:
 	$(UV) sync --locked --all-groups
@@ -17,7 +17,7 @@ lint:
 	$(UV) run ruff check .
 
 typecheck:
-	$(UV) run mypy src tests scripts
+	$(UV) run mypy src tests scripts load_tests
 
 test:
 	$(UV) run pytest
@@ -111,6 +111,21 @@ prefect-deploy:
 
 fixture-flow:
 	$(UV) run python -m ticket_router.orchestration.fixture_flow
+
+benchmark:
+	$(UV) run python -m ticket_router.benchmarking
+
+model-contract:
+	$(UV) run python -m ticket_router.benchmarking.contract
+
+load-test:
+	$(UV) run python -m ticket_router.benchmarking.load_test
+
+operational-validation:
+	$(UV) run python scripts/operational_validation.py
+
+operational-validation-disruptions:
+	$(UV) run python scripts/operational_validation.py --run-compose-disruptions
 
 docker-build:
 	$(DOCKER_COMPOSE) build api dashboard mlflow prefect-worker

@@ -41,6 +41,7 @@ development = [
   "pytest-cov",
   "httpx",
   "ruff",
+  "types-psutil",
   "types-pyyaml",
 ]
 monitoring = [
@@ -54,6 +55,11 @@ dashboard = [
   "httpx",
   "pandas",
   "streamlit",
+]
+benchmarking = [
+  "httpx",
+  "locust",
+  "psutil",
 ]
 api = [
   "alembic",
@@ -79,7 +85,7 @@ packages = ["src/ticket_router"]
 [tool.ruff]
 target-version = "py312"
 line-length = 100
-src = ["src", "tests", "scripts"]
+src = ["src", "tests", "scripts", "load_tests"]
 extend-exclude = [
   ".pytest-tmp",
   ".test-output",
@@ -102,7 +108,7 @@ line-ending = "lf"
 
 [tool.mypy]
 python_version = "3.12"
-files = ["src", "tests", "scripts"]
+files = ["src", "tests", "scripts", "load_tests"]
 strict = true
 warn_unreachable = true
 show_error_codes = true

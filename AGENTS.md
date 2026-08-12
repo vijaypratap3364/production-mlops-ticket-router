@@ -27,7 +27,7 @@ uv sync --locked --all-groups
 uv run ruff format .
 uv run ruff format --check .
 uv run ruff check .
-uv run mypy src tests scripts
+uv run mypy src tests scripts load_tests
 uv run pytest
 uv run pre-commit run --all-files
 ```
@@ -55,4 +55,3 @@ Run narrower tests while iterating, then the full gate before the final commit. 
 - Add regression tests before fixing a defect when practical.
 - Keep unfinished functionality explicitly marked in documentation; placeholders must not imply a
   working implementation.
-
