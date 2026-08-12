@@ -130,8 +130,15 @@ markers = [
 [tool.coverage.run]
 branch = true
 source = ["ticket_router"]
+omit = [
+  "src/ticket_router/**/__main__.py",
+  "src/ticket_router/api/main.py",
+  "src/ticket_router/monitoring/build_reference.py",
+]
 
 [tool.coverage.report]
+fail_under = 80
+precision = 2
 show_missing = true
 skip_covered = true
 exclude_also = [
