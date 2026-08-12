@@ -1,11 +1,13 @@
 # Production MLOps Ticket Router
 
+[![CI](https://github.com/vijaypratap3364/production-mlops-ticket-router/actions/workflows/ci.yml/badge.svg)](https://github.com/vijaypratap3364/production-mlops-ticket-router/actions/workflows/ci.yml)
+
 A local-first, production-style machine-learning system for routing English customer-support
 tickets to the correct support queue. The project is designed as a public portfolio repository
 and uses only open-source libraries and local services.
 
-> **Current status:** Stage 13 local Docker Compose packaging and smoke-test workflow.
-> Explicit champion promotion remains a separate bootstrap action; no public deployment is created.
+> **Current status:** Stage 14 automated quality gates and GitHub Actions CI.
+> The stack remains local-only; release automation builds artifacts but never publishes or deploys.
 
 ## Scope
 
@@ -92,7 +94,7 @@ revision that future ingestion code must use.
 - MLflow Model Registry version `ticket-router/1` with alias `candidate`, load/signature/contract
   verification, and aliases instead of deprecated lifecycle stages.
 - Configurable absolute and champion-relative promotion gates plus a separate explicit human command;
-  `champion` remains unset until that command is intentionally approved.
+  the later Stage 13 bootstrap used that command to approve version 1 as the initial champion.
 
 ## Stage 8 capabilities
 
@@ -116,6 +118,21 @@ revision that future ingestion code must use.
 - HMAC-SHA-256 text fingerprints when a secret is configured, no raw subject/body columns, and
   explicit opt-in redacted-text storage with a documented retention policy.
 
+## Stage 10 capabilities
+
+- Privacy-safe monitoring reference/current feature sets instead of blind generic drift on raw text.
+- Evidently HTML/JSON drift reports, delayed-label metrics, multi-signal alert policy, and persisted
+  monitoring-run lineage.
+- Deterministic planted-drift simulation and fixture tests for healthy, warning, critical, and
+  insufficient-data paths.
+
+## Stage 11 capabilities
+
+- Prefect ingestion, candidate-training, monitoring, and conditional-retraining flows composed from
+  retryable, observable, idempotent tasks.
+- Versioned retraining datasets and configurable multi-signal triggers with minimum-feedback guards.
+- Candidate registration may be automated, while champion promotion remains an explicit human action.
+
 ## Stage 12 capabilities
 
 - Five-page Streamlit interface for single and batch routing, feedback, monitoring, model lineage,
@@ -134,11 +151,20 @@ revision that future ingestion code must use.
 - Explicit idempotent bootstrap with no training in normal API startup, plus a synthetic prediction,
   feedback, persistence, and dashboard-connectivity smoke protocol.
 
+## Stage 14 capabilities
+
+- Branch-aware coverage enforcement at 80%, with deterministic unit, disposable PostgreSQL
+  integration, and opt-in live Compose end-to-end test boundaries.
+- GitHub Actions jobs for Ruff, mypy, unit coverage, PostgreSQL integration, package build, and all
+  production Docker image builds without full-data training.
+- Immutable action revisions, uv dependency caching, and build-only release automation with no
+  publishing or deployment credentials.
+
 ## Prerequisites
 
 - Git
 - [`uv`](https://docs.astral.sh/uv/getting-started/installation/)
-- Docker Desktop will be required in a later stage, but it is not needed for Stage 1.
+- Docker Desktop for PostgreSQL integration tests and the local Compose stack.
 
 No cloud account, hosted model API, credit card, or paid service is required.
 
@@ -177,6 +203,10 @@ The `uv` commands are canonical and work in PowerShell and Bash:
 | Lint | `uv run ruff check .` | `make lint` |
 | Type-check | `uv run mypy src tests scripts` | `make typecheck` |
 | Test with coverage | `uv run pytest` | `make test` |
+| Unit tests with coverage | `uv run pytest tests/unit` | `make test-unit` |
+| Integration tests | `uv run pytest tests/integration --no-cov` | `make test-integration` |
+| Opt-in live-stack tests | `uv run pytest tests/e2e --no-cov` | `make test-e2e` |
+| Build Python distributions | `uv build` | `make build-package` |
 | Run all non-mutating checks | See commands below | `make check` |
 | Download pinned data | `uv run python -m ticket_router.data.download` | `make download-data` |
 | Normalize raw data | `uv run python -m ticket_router.data.normalize` | `make normalize-data` |
@@ -205,7 +235,7 @@ The `uv` commands are canonical and work in PowerShell and Bash:
 | Run the fixture smoke flow | `uv run python -m ticket_router.orchestration.fixture_flow` | `make fixture-flow` |
 | Remove project caches | `uv run python scripts/clean.py` | `make clean` |
 
-Run the complete Stage 1 quality gate:
+Run the complete local quality gate:
 
 ```powershell
 uv run ruff format --check .
@@ -214,6 +244,14 @@ uv run mypy src tests scripts
 uv run pytest
 uv run pre-commit run --all-files
 ```
+
+Coverage is branch-aware and fails below 80%. Only one-line executable entry-point shims are
+excluded; application, data, model, API, database, monitoring, and orchestration logic remains in
+scope. Unit tests use small deterministic fixtures and no network. Integration tests use a
+disposable PostgreSQL database when `TEST_DATABASE_URL` is set. The live Compose end-to-end test is
+opt-in through `RUN_COMPOSE_E2E=1` after the stack has been bootstrapped. Pull-request CI never
+downloads the complete dataset, trains candidates, opens the sealed test split, or moves model
+aliases. See `docs/ci.md` for the full test and workflow contract.
 
 ## Configuration
 
@@ -279,7 +317,8 @@ manifest contents, and dataset limitations.
 - **Complete:** Stage 11—Prefect flows, controlled retraining, data lineage, and local schedules.
 - **Complete:** Stage 12—Streamlit prediction, feedback, monitoring, model, and status views.
 - **Complete:** Stage 13—Docker images, Compose stack/profiles, bootstrap, and smoke protocol.
-- **TODO:** GitHub Actions, load tests, benchmark report, and remaining operational documentation.
+- **Complete:** Stage 14—coverage enforcement, CI quality gates, PostgreSQL integration, and builds.
+- **TODO:** Locust load tests, reproducible service benchmark report, and release/version policy.
 
 See `docs/implementation-plan.md` for the complete architecture, lifecycle, acceptance criteria, and
 risk register. Unfinished sections are intentionally labeled and must not be represented as working.
@@ -292,6 +331,8 @@ See `docs/dashboard.md` for the API-only dashboard boundary, local startup, CSV 
 availability behavior.
 See `docs/docker.md` for fresh-machine Compose startup, explicit bootstrap, smoke verification,
 persistence, optional Prefect services, and local-only service addresses.
+See `docs/ci.md` for the local/CI quality matrix, fixture boundaries, coverage policy, and release
+automation safety boundary.
 
 ## Results
 
@@ -299,9 +340,10 @@ The Stage 3 analysis validated 28,190 normalized English records and selected al
 observed queues. It flagged 4,495 exact duplicate groups and found no contradictory-label groups.
 Stage 4 produced 19,729 training, 4,232 validation, and 4,229 sealed-test records without record-ID
 or exact-text-group overlap. The Stage 5 incumbent scored 0.58822 validation macro F1. Stage 6
-selected calibrated word TF-IDF + LinearSVC at 0.67812 validation macro F1 after train-only
-cross-validation and guardrail checks. Its single authorized Stage 7 test evaluation scored 0.69681
-macro F1 and registered `ticket-router` version 1 as `candidate`; `champion` remains unset. See
+selected calibrated word TF-IDF + LinearSVC at 0.67889 validation macro F1 after train-only
+cross-validation and guardrail checks. Its single authorized Stage 7 test evaluation scored 0.69606
+macro F1 and registered `ticket-router` version 1. The explicit Stage 13 bootstrap promotion set
+both `candidate` and `champion` to version 1 after all initial gates passed. See
 `docs/data-card.md`, `docs/baseline-modeling.md`, `docs/candidate-experimentation.md`, and
 `docs/model-card.md` for measured details.
 

@@ -1,4 +1,4 @@
-# Model card: ticket-router candidate version 1
+# Model card: ticket-router version 1
 
 ## Model details
 
@@ -10,10 +10,10 @@ MLflow registered-model name: `ticket-router`
 
 Registered version: `1`
 
-Current aliases: `candidate` → version `1`; `champion` is intentionally unset pending explicit
-human promotion.
+Current aliases: `candidate` → version `1`; `champion` → version `1` after explicit human-approved
+bootstrap promotion.
 
-Final MLflow run: `59a0e47e2118426b87dd09ed4f4ec847`
+Final MLflow run: `042a28f803c24c79b5c1051f2e72a880`
 
 ## Architecture and prediction contract
 
@@ -64,35 +64,35 @@ macro F1 after passing recall, stability, latency, and size guardrails. Its vali
 
 | Metric | Value |
 |---|---:|
-| Macro F1 | 0.678120 |
-| Weighted F1 | 0.661937 |
-| Accuracy | 0.663043 |
-| Macro precision | 0.767111 |
-| Macro recall | 0.623787 |
-| Log loss | 1.102393 |
+| Macro F1 | 0.678889 |
+| Weighted F1 | 0.664230 |
+| Accuracy | 0.665406 |
+| Macro precision | 0.771256 |
+| Macro recall | 0.623157 |
+| Log loss | 1.102612 |
 
 No test result influenced model-family selection, parameters, class selection, preprocessing, or
 promotion thresholds.
 
 ## Final test results
 
-The following values are from the single authorized test evaluation on 2026-08-07:
+The following values are from the single authorized test evaluation on 2026-08-11:
 
 | Metric | Value |
 |---|---:|
-| Macro F1 | 0.696808 |
-| Weighted F1 | 0.688007 |
-| Accuracy | 0.689288 |
-| Macro precision | 0.785627 |
-| Macro recall | 0.642276 |
-| Multiclass log loss | 1.041991 |
-| Mean maximum confidence | 0.569046 |
-| Mean confidence, correct predictions | 0.616956 |
-| Mean confidence, incorrect predictions | 0.462764 |
+| Macro F1 | 0.696057 |
+| Weighted F1 | 0.688432 |
+| Accuracy | 0.689761 |
+| Macro precision | 0.785512 |
+| Macro recall | 0.641317 |
+| Multiclass log loss | 1.042178 |
+| Mean maximum confidence | 0.569149 |
+| Mean confidence, correct predictions | 0.616981 |
+| Mean confidence, incorrect predictions | 0.462805 |
 
 Local batch inference over all 4,229 records used seven repetitions with batches of 256. Median
-latency was 0.125197 ms/record, p95 was 0.143213 ms/record, and p99 was 0.149153 ms/record. The
-serialized local pipeline was 10,029,945 bytes. These measurements describe this Windows machine;
+latency was 0.114693 ms/record and median throughput was 8,718.92 records/second. The serialized
+local pipeline was 10,030,367 bytes. These measurements describe the local evaluation environment;
 they are not production service-level objectives.
 
 ### Per-class test performance
@@ -100,14 +100,14 @@ they are not production service-level objectives.
 | Queue | Precision | Recall | F1 | Support |
 |---|---:|---:|---:|---:|
 | Technical Support | 0.6360 | 0.8049 | 0.7106 | 1,220 |
-| Product Support | 0.6361 | 0.6393 | 0.6377 | 793 |
-| Customer Service | 0.6435 | 0.6526 | 0.6480 | 639 |
-| IT Support | 0.6537 | 0.5371 | 0.5897 | 499 |
-| Billing and Payments | 0.9082 | 0.8203 | 0.8620 | 434 |
-| Returns and Exchanges | 0.8473 | 0.5286 | 0.6510 | 210 |
-| Service Outages and Maintenance | 0.9143 | 0.7758 | 0.8393 | 165 |
-| Sales and Pre-Sales | 0.8429 | 0.4683 | 0.6020 | 126 |
-| Human Resources | 0.9322 | 0.6627 | 0.7746 | 83 |
+| Product Support | 0.6420 | 0.6444 | 0.6432 | 793 |
+| Customer Service | 0.6404 | 0.6495 | 0.6449 | 639 |
+| IT Support | 0.6538 | 0.5411 | 0.5921 | 499 |
+| Billing and Payments | 0.9059 | 0.8203 | 0.8609 | 434 |
+| Returns and Exchanges | 0.8516 | 0.5190 | 0.6450 | 210 |
+| Service Outages and Maintenance | 0.9214 | 0.7818 | 0.8459 | 165 |
+| Sales and Pre-Sales | 0.8310 | 0.4683 | 0.5990 | 126 |
+| Human Resources | 0.9310 | 0.6506 | 0.7660 | 83 |
 | General Inquiry | 0.8421 | 0.5333 | 0.6531 | 60 |
 
 The weakest recall is `Sales and Pre-Sales` at 0.4683, followed by `Returns and Exchanges`,
@@ -118,8 +118,8 @@ assigning them and may over-route ambiguous tickets to larger support queues.
 ## Calibration behavior
 
 The LinearSVC scores are converted to probabilities through three-fold sigmoid calibration fitted
-only within the combined training data. Test log loss was 1.041991. Mean maximum confidence was
-0.5690 compared with accuracy of 0.6893; correct predictions averaged 0.6170 confidence and errors
+only within the combined training data. Test log loss was 1.042178. Mean maximum confidence was
+0.5691 compared with accuracy of 0.6898; correct predictions averaged 0.6170 confidence and errors
 averaged 0.4628. This evidence suggests useful confidence separation but does not justify treating
 the scores as guaranteed probabilities or automating high-impact decisions without monitoring.
 
@@ -127,15 +127,16 @@ the scores as guaranteed probabilities or automating high-impact decisions witho
 
 All frozen initial-promotion gates passed:
 
-- macro F1 0.696808 ≥ 0.60;
+- macro F1 0.696057 ≥ 0.60;
 - minimum class recall 0.468254 ≥ 0.45;
-- median latency 0.125197 ms/record ≤ 1.0 ms/record;
+- median latency 0.114693 ms/record ≤ 1.0 ms/record;
 - logged artifact loaded successfully;
 - synthetic prediction-contract test passed;
 - MLflow signature matched the planned API contract.
 
 There was no prior champion, so no relative regression comparison was required. Passing gates did
-not move the champion alias automatically. Promotion remains the explicit command:
+not move the champion alias automatically. Stage 13 later invoked the explicit command with human
+approval and recorded `champion` version 1:
 
 ```text
 uv run python -m ticket_router.registry.promote --approve
@@ -143,12 +144,13 @@ uv run python -m ticket_router.registry.promote --approve
 
 Key lineage hashes:
 
-- split manifest: `e7b162f5f439d4327648524a01eae0666dd4d2e755e5600327103098fe6285de`
+- split manifest: `42a89d794b3a175dd11f9fac3c4f537b6d5e993fdbd6dc0e48466ae91845b28c`
 - combined train+validation: `0ef52577bace28e211da26410b5c05e1c3faac43a55872f8b7ad3bac37def6d6`
 - test data: `19a4b1c0db4ed2d8f4fb989c924692a5726bb7b9507581fa6509c777003cad47`
 - final configuration: `76301b418083667f27c839783f582baf5f97e87d2a27ab43215c1af18c3d44f8`
-- serialized model: `301a5cbff42352fd9622003e8c4fae5a9195ea4292d835abdd2e75f9b8c632dd`
-- source Git commit: `afc1c9ca02596aa5f4e284e6ef810e4f19e33e04` with Stage 7 changes dirty
+- serialized model: `e20b1a355748b3d613b33dd3723157f8c2f641cfc031b1edf7b3a53aa8b9293f`
+- source Git commit: unavailable in the persisted recovery artifact; all data/configuration hashes
+  and the MLflow run ID remain recorded
 
 The first post-evaluation registration attempt encountered a Windows console-encoding error after
 the evaluation and model were already logged. Registration recovery used only the saved evaluation
