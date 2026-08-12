@@ -6,7 +6,7 @@ A local-first, production-style machine-learning system for routing English cust
 tickets to the correct support queue. The project is designed as a public portfolio repository
 and uses only open-source libraries and local services.
 
-> **Current status:** Stage 14 automated quality gates and GitHub Actions CI.
+> **Current status:** Stage 15 reproducible performance benchmarking and operational validation.
 > The stack remains local-only; release automation builds artifacts but never publishes or deploys.
 
 ## Scope
@@ -160,6 +160,17 @@ revision that future ingestion code must use.
 - Immutable action revisions, uv dependency caching, and build-only release automation with no
   publishing or deployment credentials.
 
+## Stage 15 capabilities
+
+- Reproducible registered-champion measurements for cold load, process memory, serialized size,
+  direct single/batch inference, and loopback FastAPI overhead with p50/p95/p99 latency.
+- Bounded Locust traffic mixing short and long single tickets, batches, and lower-frequency
+  feedback, with versioned defaults and hard local safety caps.
+- Champion model-contract checks plus operational scenarios for dependency outages, restart,
+  malformed input, oversized batches, duplicate feedback, and insufficient monitoring data.
+- Machine-readable JSON and Markdown reports that preserve actual observations and compare them
+  with predeclared local targets without treating those targets as public service guarantees.
+
 ## Prerequisites
 
 - Git
@@ -201,7 +212,7 @@ The `uv` commands are canonical and work in PowerShell and Bash:
 | Install all groups | `uv sync --locked --all-groups` | `make install` |
 | Format | `uv run ruff format .` then `uv run ruff check --fix .` | `make format` |
 | Lint | `uv run ruff check .` | `make lint` |
-| Type-check | `uv run mypy src tests scripts` | `make typecheck` |
+| Type-check | `uv run mypy src tests scripts load_tests` | `make typecheck` |
 | Test with coverage | `uv run pytest` | `make test` |
 | Unit tests with coverage | `uv run pytest tests/unit` | `make test-unit` |
 | Integration tests | `uv run pytest tests/integration --no-cov` | `make test-integration` |
@@ -233,6 +244,10 @@ The `uv` commands are canonical and work in PowerShell and Bash:
 | Evaluate controlled retraining | `uv run python -m ticket_router.orchestration retraining` | `make flow-retraining` |
 | Register local Prefect deployments | `uv run python -m ticket_router.orchestration.deploy` | `make prefect-deploy` |
 | Run the fixture smoke flow | `uv run python -m ticket_router.orchestration.fixture_flow` | `make fixture-flow` |
+| Validate the champion contract | `uv run python -m ticket_router.benchmarking.contract` | `make model-contract` |
+| Run bounded local load test | `uv run python -m ticket_router.benchmarking.load_test` | `make load-test` |
+| Run non-disruptive reliability checks | `uv run python scripts/operational_validation.py` | `make operational-validation` |
+| Generate the benchmark report | `uv run python -m ticket_router.benchmarking` | `make benchmark` |
 | Remove project caches | `uv run python scripts/clean.py` | `make clean` |
 
 Run the complete local quality gate:
@@ -240,7 +255,7 @@ Run the complete local quality gate:
 ```powershell
 uv run ruff format --check .
 uv run ruff check .
-uv run mypy src tests scripts
+uv run mypy src tests scripts load_tests
 uv run pytest
 uv run pre-commit run --all-files
 ```
@@ -280,6 +295,8 @@ parameters, or committed documentation.
   delayed-label quality, and multi-signal alert policy.
 - `src/ticket_router/orchestration`: local Prefect flows, retraining policy, dataset versioning,
   deployment registration, and the immutable candidate/promotion boundary.
+- `src/ticket_router/benchmarking`: typed benchmark configuration, registered-model contract,
+  latency measurement, target comparison, and report generation.
 - `src/ticket_router/dashboard`: Streamlit pages, typed FastAPI client, and upload validation only.
 
 Dashboard code must call application/API boundaries; modeling code must never import dashboard code.
@@ -310,7 +327,7 @@ manifest contents, and dataset limitations.
 - **Complete:** Stage 5—validation-only sparse baselines, evaluation artifacts, and leaderboard.
 - **Complete:** Stage 6—MLflow tracking, bounded candidate search, guardrails, and candidate selection.
 - **Complete:** Stage 7—single-use final evaluation, candidate registration, and promotion gates.
-- **Pending human action:** Explicit initial promotion from `candidate` to `champion`.
+- **Operational rule:** Future candidate-to-champion promotion remains an explicit human action.
 - **Complete:** Stage 8—FastAPI champion inference, feedback contract, metrics, and privacy-safe logs.
 - **Complete:** Stage 9—PostgreSQL schema, Alembic migration, repositories, and API persistence.
 - **Complete:** Stage 10—privacy-safe Evidently monitoring, delayed-label quality, and alert policy.
@@ -318,7 +335,9 @@ manifest contents, and dataset limitations.
 - **Complete:** Stage 12—Streamlit prediction, feedback, monitoring, model, and status views.
 - **Complete:** Stage 13—Docker images, Compose stack/profiles, bootstrap, and smoke protocol.
 - **Complete:** Stage 14—coverage enforcement, CI quality gates, PostgreSQL integration, and builds.
-- **TODO:** Locust load tests, reproducible service benchmark report, and release/version policy.
+- **Complete:** Stage 15—bounded load testing, champion contract checks, reproducible benchmarks,
+  and operational reliability validation.
+- **TODO:** Release/version policy.
 
 See `docs/implementation-plan.md` for the complete architecture, lifecycle, acceptance criteria, and
 risk register. Unfinished sections are intentionally labeled and must not be represented as working.
@@ -333,6 +352,8 @@ See `docs/docker.md` for fresh-machine Compose startup, explicit bootstrap, smok
 persistence, optional Prefect services, and local-only service addresses.
 See `docs/ci.md` for the local/CI quality matrix, fixture boundaries, coverage policy, and release
 automation safety boundary.
+See `docs/benchmarking.md` for the measurement protocol, safety caps, outage procedure, actual local
+results, and interpretation limits.
 
 ## Results
 
@@ -346,6 +367,14 @@ macro F1 and registered `ticket-router` version 1. The explicit Stage 13 bootstr
 both `candidate` and `champion` to version 1 after all initial gates passed. See
 `docs/data-card.md`, `docs/baseline-modeling.md`, `docs/candidate-experimentation.md`, and
 `docs/model-card.md` for measured details.
+
+The Stage 15 local benchmark loaded champion version 1 in 3,698.732400 ms and measured direct
+single-request p50/p95/p99 latency of 5.639900/11.411565/12.464165 ms. Loopback API
+p50/p95/p99 was 15.274450/21.308660/23.411020 ms with zero errors across 40 requests. The bounded
+Locust CSV recorded 131 requests, zero failures, 82 ms p95, and 4.483186 requests/s. All 12
+predeclared local targets and all nine operational reliability scenarios passed. These are actual
+one-machine observations, not service-level guarantees; see `docs/benchmarking.md` for the complete
+protocol and limitations.
 
 ## License
 
