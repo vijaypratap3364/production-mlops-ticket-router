@@ -1,7 +1,7 @@
 UV ?= uv
 DOCKER_COMPOSE ?= docker compose
 
-.PHONY: install format format-check lint typecheck test check download-data normalize-data analyze-data prepare-data train-baselines experiment-candidates evaluate-final recover-final-registration promote-candidate api-dev dashboard-dev db-upgrade db-downgrade db-revision test-db-integration build-monitoring-reference monitor retrain simulate-drift flow-ingest flow-train flow-monitor flow-retraining prefect-deploy fixture-flow docker-build docker-up docker-up-orchestration docker-down docker-logs docker-status docker-smoke docker-monitor docker-retrain migrate bootstrap clean
+.PHONY: install format format-check lint typecheck test test-unit test-integration test-e2e build-package check download-data normalize-data analyze-data prepare-data train-baselines experiment-candidates evaluate-final recover-final-registration promote-candidate api-dev dashboard-dev db-upgrade db-downgrade db-revision test-db-integration build-monitoring-reference monitor retrain simulate-drift flow-ingest flow-train flow-monitor flow-retraining prefect-deploy fixture-flow docker-build docker-up docker-up-orchestration docker-down docker-logs docker-status docker-smoke docker-monitor docker-retrain migrate bootstrap clean
 
 install:
 	$(UV) sync --locked --all-groups
@@ -21,6 +21,18 @@ typecheck:
 
 test:
 	$(UV) run pytest
+
+test-unit:
+	$(UV) run pytest tests/unit
+
+test-integration:
+	$(UV) run pytest tests/integration --no-cov
+
+test-e2e:
+	$(UV) run pytest tests/e2e --no-cov
+
+build-package:
+	$(UV) build
 
 check: format-check lint typecheck test
 
