@@ -13,9 +13,9 @@ uv sync --locked --all-groups
 Copy-Item .env.example .env
 ```
 
-The API requires an MLflow model assigned to the configured `champion` alias. The current project
-state intentionally leaves that alias unset until the explicit, human-triggered promotion command
-is run. Review the Stage 7 gate report and model card before approving it:
+The API requires an MLflow model assigned to the configured `champion` alias. The reviewed local
+portfolio run promoted `ticket-router` version 1, but a clean checkout contains no MLflow database
+or model artifact. Bootstrap the local stack or review and promote an eligible candidate:
 
 ```powershell
 uv run python -m ticket_router.registry.promote --approve

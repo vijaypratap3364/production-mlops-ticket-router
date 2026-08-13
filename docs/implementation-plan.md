@@ -1,9 +1,12 @@
 # Production MLOps Ticket-Routing System: Implementation Plan
 
-Status: pre-implementation planning only
+Status: historical pre-implementation baseline; Stages 1–16 are implemented
 Target repository name: `production-mlops-ticket-router`
 Target runtime: Python 3.12, local CPU, zero-cost open-source services
 Prepared: 2026-08-03
+
+Current operational contracts live in the README, cards, runbooks, ADRs, and generated manifests.
+When they are more specific than a planned statement below, use the implemented documentation.
 
 ## 1. Scope, principles, and current repository state
 

@@ -19,7 +19,7 @@ The upstream dataset card marks the data as
 [`CC BY-NC 4.0`](https://creativecommons.org/licenses/by-nc/4.0/). This permits attributed
 noncommercial use subject to the license terms. The dataset is not redistributed in this GitHub
 repository. Downloaded CSV files, normalized Parquet data, and generated manifests remain ignored
-local artifacts. A future source-code license does not relicense the dataset.
+local artifacts. The project's MIT source-code license does not relicense the dataset.
 
 Users are responsible for confirming that their use is noncommercial and otherwise compatible with
 the upstream license.

@@ -8,7 +8,7 @@ from Hugging Face at the immutable revision recorded in `configs/base.yaml`. The
 attributed to Tobi Bueck / Softoft and has DOI
 [`10.57967/hf/6184`](https://doi.org/10.57967/hf/6184). Its dataset card identifies the license as
 CC BY-NC 4.0. The dataset is not redistributed in this repository; its noncommercial terms remain
-separate from the project's eventual source-code license.
+separate from the project's MIT source-code license.
 
 ## Synthetic nature
 
@@ -116,8 +116,9 @@ target counts but never passes those fields into a predictor.
 - Queue frequency is imbalanced and represents this synthetic source, not a universal taxonomy.
 - Aggregate token frequencies may reflect generator templates rather than organic user language.
 - Near-duplicate detection is deliberately conservative and is not semantic similarity detection.
-- The final test split remains sealed. Stage 5 reports validation-only baseline performance; no
-  final-test performance result exists yet.
+- The test split remains sealed from routine utilities. Stage 7 opened it once after selection was
+  frozen; the reviewed model card reports that single evaluation, and the persistent audit rejects
+  repeated test evaluation.
 
 ## Privacy considerations
 

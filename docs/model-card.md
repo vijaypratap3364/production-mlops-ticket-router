@@ -27,7 +27,7 @@ The fitted scikit-learn `Pipeline` contains word TF-IDF followed by a calibrated
 
 The registered MLflow signature is one variable-length string tensor in and one variable-length
 string tensor out. Each input string is the conservatively cleaned `model_text` derived solely from
-the submitted `subject` and `body`. The output is exactly one queue label. The future FastAPI layer
+the submitted `subject` and `body`. The output is exactly one queue label. The FastAPI layer
 must construct `model_text` through the versioned preprocessing code and must not pass queue,
 answer, response, priority, type, tags, resolution, or agent-generated fields to the model.
 
@@ -166,7 +166,7 @@ than English. Do not interpret a predicted queue or probability as a resolution 
 The dataset is synthetic and template-heavy. Even with exact-duplicate isolation, semantic template
 similarity may inflate offline performance. Real tickets can contain organization-specific products,
 slang, multilingual text, novel queues, and distribution shifts absent from this benchmark. The
-CC BY-NC dataset terms also limit commercial reuse independently of the repository's future code
+CC BY-NC dataset terms also limit commercial reuse independently of the repository's MIT code
 license.
 
 ## Privacy and security
