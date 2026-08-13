@@ -45,6 +45,9 @@ class FakeProbabilityModel:
 def api_settings(monkeypatch: pytest.MonkeyPatch) -> Settings:
     monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.delenv("DATABASE_REQUIRED", raising=False)
+    # mlflow.set_tracking_uri mutates this process environment variable. Keep
+    # model-logging tests from changing the API fixture's deployment settings.
+    monkeypatch.delenv("MLFLOW_TRACKING_URI", raising=False)
     return Settings.load(env_file=None).model_copy(
         update={"database_url": None, "database_required": False}
     )

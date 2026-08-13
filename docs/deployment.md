@@ -57,6 +57,19 @@ docker compose --profile orchestration ps
 
 Schedules are disabled by default. Monitoring and retraining evaluation never promote a champion.
 
+## Release attestation
+
+After all local checks and GitHub Actions pass for the exact clean commit, bind that commit to the
+existing champion before creating a version tag:
+
+```powershell
+uv run python -m ticket_router.registry.attest_release --release v1.0.0
+```
+
+This validates immutable split hashes, registry lineage, prediction behavior, and the model signature.
+It records `release_git_commit` without overwriting an unavailable historical training commit, does
+not load the test set for evaluation, and never changes `candidate` or `champion` aliases.
+
 ## Configuration and secrets
 
 Versioned YAML owns non-secret reproducibility settings. `.env` owns local credentials, URLs,

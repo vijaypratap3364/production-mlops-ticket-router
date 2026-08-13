@@ -40,7 +40,18 @@ class ModelRegistryService:
     """Small alias-aware boundary around the MLflow registry client."""
 
     def __init__(self, client: MlflowClient | None = None) -> None:
-        self._client = client or MlflowClient()
+        if client is not None:
+            self._client = client
+            return
+        tracking_uri = mlflow.get_tracking_uri()
+        # MLflow 3 keeps the registry URI as independent process-global state. Keep
+        # both stores pinned to the caller-selected backend rather than inheriting a
+        # registry URI left behind by another workflow or test.
+        mlflow.set_registry_uri(tracking_uri)
+        self._client = MlflowClient(
+            tracking_uri=tracking_uri,
+            registry_uri=tracking_uri,
+        )
 
     def register_candidate(
         self,

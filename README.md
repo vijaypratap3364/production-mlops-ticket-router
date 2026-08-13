@@ -312,6 +312,18 @@ uv run python -m ticket_router.registry.evaluate_final
 uv run python -m ticket_router.registry.promote --approve
 ```
 
+Before creating a repository release tag, attest the clean Git commit against the immutable champion
+without retraining, reevaluating the sealed test set, or moving an alias:
+
+```bash
+uv run python -m ticket_router.registry.attest_release --release v1.0.0
+```
+
+The command rechecks split hashes, promotion lineage, model loading, prediction behavior, and the
+MLflow signature. It writes an ignored audit artifact under `artifacts/reports/releases/` and adds
+release-specific tags to the existing champion version. Historical training lineage is preserved;
+missing historical metadata is never fabricated.
+
 `evaluate_final` is the only authorized path to the sealed test data. Its audit prevents repeated
 test evaluation, registers the evaluated version as `candidate`, and records every gate. Promotion
 is deliberately separate and human-triggered. The current reviewed local state is

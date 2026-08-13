@@ -60,6 +60,18 @@ Build all four project images:
 docker compose build api dashboard mlflow prefect-worker
 ```
 
+For release/lineage-capable builds, pass the exact source identity. The Makefile Docker targets derive
+these values automatically. In PowerShell, the equivalent explicit setup is:
+
+```powershell
+$env:SOURCE_GIT_COMMIT = git rev-parse HEAD
+$env:SOURCE_GIT_DIRTY = if (git status --porcelain) { "true" } else { "false" }
+docker compose build api dashboard mlflow prefect-worker
+```
+
+An empty source commit remains allowed for ordinary local development, but release attestation
+refuses missing or dirty Git identity.
+
 Start the core stack. The API waits for healthy PostgreSQL and MLflow and for the Alembic migration
 container to finish successfully:
 

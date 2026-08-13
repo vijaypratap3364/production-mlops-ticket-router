@@ -22,6 +22,7 @@ ChampionLoader = Callable[[Settings], LoadedChampion]
 def load_champion(settings: Settings) -> LoadedChampion:
     """Resolve champion, then load the resolved numeric version to avoid alias races."""
     mlflow.set_tracking_uri(settings.effective_mlflow_tracking_uri)
+    mlflow.set_registry_uri(settings.effective_mlflow_tracking_uri)
     name = settings.effective_registered_model_name
     alias = settings.mlflow_model_alias
     registry = ModelRegistryService()

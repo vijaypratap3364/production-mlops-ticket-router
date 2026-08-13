@@ -78,6 +78,7 @@ def configure_experiment_tracking(
             local_directory = project_root / local_directory
         resolved_uri = _local_sqlite_tracking_uri(local_directory)
     mlflow.set_tracking_uri(resolved_uri)
+    mlflow.set_registry_uri(resolved_uri)
     mlflow.set_experiment(experiment_config.experiment_name)
     return TrackingResolution(
         requested_uri=requested_uri,
