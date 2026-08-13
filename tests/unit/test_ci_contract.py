@@ -45,6 +45,10 @@ def test_ci_workflow_has_required_quality_and_build_boundaries() -> None:
     assert "uv run pytest tests/unit" in commands
     assert "uv run pytest -m integration tests/integration --no-cov" in commands
     assert "uv build" in commands
+    assert not (
+        workflow.get("env", {}).get("UV_FROZEN") == "true"
+        and any("uv sync --locked" in command for command in commands)
+    )
 
 
 def test_ci_uses_disposable_postgres_and_does_not_run_full_training() -> None:

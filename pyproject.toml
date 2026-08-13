@@ -78,6 +78,17 @@ mlflow-server = [
 
 [tool.uv]
 default-groups = ["runtime", "development"]
+constraint-dependencies = [
+  "cryptography>=50.0.0",
+  "gitpython>=3.1.58",
+  "mlflow>=3.15.1",
+  "pyarrow>=23.0.1",
+]
+# MLflow 3.15.1 temporarily caps cryptography below the scanner's fixed release. The release gate
+# validates this override with registry, model-loading, Docker, and smoke tests.
+override-dependencies = [
+  "cryptography>=50.0.0",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ticket_router"]
