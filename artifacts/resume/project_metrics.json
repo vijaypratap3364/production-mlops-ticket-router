@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "reviewed_at_utc": "2026-08-12T23:45:58.779222Z",
+  "project": "production-mlops-ticket-router",
+  "data": {
+    "normalized_english_records": 28190,
+    "selected_queue_count": 10,
+    "exact_duplicate_group_count": 4495,
+    "train_records": 19729,
+    "validation_records": 4232,
+    "test_records": 4229,
+    "imbalance_ratio": 20.38847117794486,
+    "split_manifest_sha256": "42a89d794b3a175dd11f9fac3c4f537b6d5e993fdbd6dc0e48466ae91845b28c",
+    "sources": [
+      "artifacts/reports/selected_classes.json (generated and ignored)",
+      "artifacts/reports/duplicate_analysis.json (generated and ignored)",
+      "artifacts/reports/split_summary.json (generated and ignored)",
+      "docs/data-card.md (reviewed repository snapshot)"
+    ]
+  },
+  "model": {
+    "registered_model_name": "ticket-router",
+    "registered_model_version": "1",
+    "model_family": "word_tfidf_calibrated_linear_svc",
+    "combined_training_records": 23961,
+    "validation_macro_f1": 0.6788888435727524,
+    "test_macro_f1": 0.6960570778151813,
+    "test_weighted_f1": 0.6884321005416468,
+    "test_accuracy": 0.6897611728541027,
+    "test_macro_precision": 0.7855124437229934,
+    "test_macro_recall": 0.6413172874560391,
+    "minimum_test_per_class_recall": 0.46825396825396826,
+    "serialized_model_size_bytes": 10030367,
+    "training_data_sha256": "0ef52577bace28e211da26410b5c05e1c3faac43a55872f8b7ad3bac37def6d6",
+    "sources": [
+      "artifacts/reports/model_leaderboard.csv (generated and ignored)",
+      "artifacts/reports/final_evaluation/final-20260811T033254Z-76301b41/final_evaluation_summary.json (generated and ignored)",
+      "artifacts/reports/promotions/promotion-20260811T040447Z-v1.json (generated and ignored)",
+      "docs/model-card.md (reviewed repository snapshot)"
+    ]
+  },
+  "operations": {
+    "benchmark_timestamp_utc": "2026-08-12T23:45:58.779222Z",
+    "champion_cold_load_ms": 3698.7324000001536,
+    "direct_single_p95_ms": 11.411565000071276,
+    "direct_single_throughput_per_second": 140.9434131943574,
+    "api_single_p95_ms": 21.308660000158845,
+    "api_benchmark_request_count": 40,
+    "api_benchmark_error_count": 0,
+    "load_test_request_count": 131,
+    "load_test_failure_count": 0,
+    "load_test_p95_ms": 82.0,
+    "load_test_throughput_per_second": 4.48318551951844,
+    "reliability_scenario_count": 9,
+    "reliability_scenarios_passed": 9,
+    "targets_evaluated": 12,
+    "targets_passed": 12,
+    "sources": [
+      "artifacts/benchmarks/benchmark_results.json (generated and ignored)",
+      "artifacts/benchmarks/reliability_results.json (generated and ignored)",
+      "docs/benchmarking.md (reviewed repository snapshot)"
+    ]
+  },
+  "restrictions": {
+    "dataset": "Synthetic customer-support tickets; CC BY-NC 4.0; not redistributed",
+    "benchmark": "One local Windows machine; not a public deployment SLO",
+    "test_evaluation": "Single authorized evaluation after candidate selection was frozen"
+  }
+}

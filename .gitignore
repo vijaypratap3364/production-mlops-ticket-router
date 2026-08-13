@@ -64,6 +64,7 @@ artifacts/**
 !artifacts/
 !artifacts/**/
 !artifacts/**/.gitkeep
+!artifacts/resume/project_metrics.json
 models/**
 !models/
 !models/**/
