@@ -3,10 +3,16 @@ name: ${COMPOSE_PROJECT_NAME:-production-mlops-ticket-router}
 x-api-build: &api-build
   context: .
   dockerfile: docker/api.Dockerfile
+  args:
+    SOURCE_GIT_COMMIT: ${SOURCE_GIT_COMMIT:-}
+    SOURCE_GIT_DIRTY: ${SOURCE_GIT_DIRTY:-false}
 
 x-worker-build: &worker-build
   context: .
   dockerfile: docker/worker.Dockerfile
+  args:
+    SOURCE_GIT_COMMIT: ${SOURCE_GIT_COMMIT:-}
+    SOURCE_GIT_DIRTY: ${SOURCE_GIT_DIRTY:-false}
 
 x-application-environment: &application-environment
   APP_ENV: development

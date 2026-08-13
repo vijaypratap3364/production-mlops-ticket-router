@@ -11,6 +11,9 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
 
+SOURCE_GIT_COMMIT_ENV = "SOURCE_GIT_COMMIT"
+SOURCE_GIT_DIRTY_ENV = "SOURCE_GIT_DIRTY"
+
 
 class GitVersion(BaseModel):
     """Best-effort source-code identity."""
@@ -98,7 +101,13 @@ def atomic_write_json(path: Path, value: object) -> None:
 
 
 def get_git_version(repository_root: Path) -> GitVersion | None:
-    """Return the current Git commit and dirty state when available."""
+    """Return source identity from release metadata or the local Git worktree."""
+    environment_commit = os.getenv(SOURCE_GIT_COMMIT_ENV, "").strip().lower()
+    if environment_commit:
+        dirty_text = os.getenv(SOURCE_GIT_DIRTY_ENV, "false").strip().casefold()
+        if dirty_text not in {"true", "false"}:
+            raise ValueError(f"{SOURCE_GIT_DIRTY_ENV} must be 'true' or 'false'")
+        return GitVersion(commit=environment_commit, dirty=dirty_text == "true")
     try:
         commit_result = subprocess.run(
             ["git", "rev-parse", "HEAD"],

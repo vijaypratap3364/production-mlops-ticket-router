@@ -1,7 +1,11 @@
 UV ?= uv
 DOCKER_COMPOSE ?= docker compose
+SOURCE_GIT_COMMIT ?= $(shell git rev-parse HEAD)
+SOURCE_GIT_DIRTY ?= $(if $(strip $(shell git status --porcelain)),true,false)
+export SOURCE_GIT_COMMIT
+export SOURCE_GIT_DIRTY
 
-.PHONY: install format format-check lint typecheck test test-unit test-integration test-e2e build-package check download-data normalize-data analyze-data prepare-data train-baselines experiment-candidates evaluate-final recover-final-registration promote-candidate api-dev dashboard-dev db-upgrade db-downgrade db-revision test-db-integration build-monitoring-reference monitor retrain simulate-drift flow-ingest flow-train flow-monitor flow-retraining prefect-deploy fixture-flow benchmark model-contract load-test operational-validation operational-validation-disruptions docker-build docker-up docker-up-orchestration docker-down docker-logs docker-status docker-smoke docker-monitor docker-retrain migrate bootstrap clean
+.PHONY: install format format-check lint typecheck test test-unit test-integration test-e2e build-package check download-data normalize-data analyze-data prepare-data train-baselines experiment-candidates evaluate-final recover-final-registration promote-candidate attest-release api-dev dashboard-dev db-upgrade db-downgrade db-revision test-db-integration build-monitoring-reference monitor retrain simulate-drift flow-ingest flow-train flow-monitor flow-retraining prefect-deploy fixture-flow benchmark model-contract load-test operational-validation operational-validation-disruptions docker-build docker-up docker-up-orchestration docker-down docker-logs docker-status docker-smoke docker-monitor docker-retrain migrate bootstrap clean
 
 install:
 	$(UV) sync --locked --all-groups
@@ -62,6 +66,10 @@ recover-final-registration:
 
 promote-candidate:
 	$(UV) run python -m ticket_router.registry.promote --approve
+
+attest-release:
+	@test -n "$(RELEASE)" || (echo "Set RELEASE, for example: make attest-release RELEASE=v1.0.0" && exit 1)
+	$(UV) run python -m ticket_router.registry.attest_release --release $(RELEASE)
 
 api-dev:
 	$(UV) run uvicorn ticket_router.api.main:app --host 127.0.0.1 --port 8000

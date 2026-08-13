@@ -17,9 +17,13 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 FROM python:3.12-slim-bookworm AS runtime
 
+ARG SOURCE_GIT_COMMIT=""
+ARG SOURCE_GIT_DIRTY="false"
 ENV PATH=/app/.venv/bin:$PATH \
     PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+    PYTHONDONTWRITEBYTECODE=1 \
+    SOURCE_GIT_COMMIT=$SOURCE_GIT_COMMIT \
+    SOURCE_GIT_DIRTY=$SOURCE_GIT_DIRTY
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends ca-certificates libgomp1 \
     && rm -rf /var/lib/apt/lists/* \

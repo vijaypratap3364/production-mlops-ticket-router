@@ -85,6 +85,7 @@ def prepare_dataset(
             cached,
             source_hashes=source_hashes,
             configuration_digest=current_configuration_hash,
+            selected_classes=selected_classes,
             project_root=resolved_root,
         )
         _write_split_summary(
@@ -255,11 +256,21 @@ def _validate_cached_manifest(
     *,
     source_hashes: dict[str, str],
     configuration_digest: str,
+    selected_classes: ClassSelectionReport,
     project_root: Path,
 ) -> None:
-    if (
-        manifest.data_source_hashes != source_hashes
-        or manifest.configuration_hash != configuration_digest
+    stable_source_names = ("normalized_data", "normalization_manifest")
+    stable_sources_match = all(
+        manifest.data_source_hashes.get(name) == source_hashes.get(name)
+        for name in stable_source_names
+    )
+    selection_matches = manifest.data_source_hashes.get("selected_classes") == source_hashes.get(
+        "selected_classes"
+    ) or _selection_semantically_matches_manifest(selected_classes, manifest)
+    if not (
+        stable_sources_match
+        and selection_matches
+        and manifest.configuration_hash == configuration_digest
     ):
         raise PreparationError(
             "Existing prepared artifacts were generated from different data or configuration; "
@@ -271,6 +282,28 @@ def _validate_cached_manifest(
             raise PreparationError(
                 f"Prepared output is missing or fails its manifest hash: {output_path}"
             )
+
+
+def _selection_semantically_matches_manifest(
+    selection: ClassSelectionReport,
+    manifest: SplitManifest,
+) -> bool:
+    """Accept serialization-only report drift while preserving label/data lineage."""
+    combined_counts = {
+        label: sum(counts.get(label, 0) for counts in manifest.per_class_counts.values())
+        for label in manifest.label_mapping
+    }
+    labels_by_index = tuple(
+        label for label, _ in sorted(manifest.label_mapping.items(), key=lambda item: item[1])
+    )
+    return (
+        selection.configuration_hash == manifest.configuration_hash
+        and selection.input_file_sha256 == manifest.data_source_hashes.get("normalized_data")
+        and selection.label_mapping == manifest.label_mapping
+        and selection.selected_classes == labels_by_index
+        and selection.selected_class_counts == combined_counts
+        and selection.final_row_count == manifest.selected_input_rows
+    )
 
 
 def _write_split_summary(

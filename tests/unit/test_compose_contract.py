@@ -73,6 +73,20 @@ def test_project_runtime_images_use_non_root_users() -> None:
         assert "COPY ." not in dockerfile
 
 
+def test_lineage_capable_images_receive_explicit_source_identity() -> None:
+    compose = _compose()
+    for extension_name in ("x-api-build", "x-worker-build"):
+        build = cast(dict[str, Any], compose[extension_name])
+        assert build["args"] == {
+            "SOURCE_GIT_COMMIT": "${SOURCE_GIT_COMMIT:-}",
+            "SOURCE_GIT_DIRTY": "${SOURCE_GIT_DIRTY:-false}",
+        }
+    for filename in ("docker/api.Dockerfile", "docker/worker.Dockerfile"):
+        dockerfile = Path(filename).read_text(encoding="utf-8")
+        assert 'ARG SOURCE_GIT_COMMIT=""' in dockerfile
+        assert "SOURCE_GIT_COMMIT=$SOURCE_GIT_COMMIT" in dockerfile
+
+
 def test_dashboard_image_disables_usage_telemetry() -> None:
     dockerfile = Path("docker/dashboard.Dockerfile").read_text(encoding="utf-8")
 
