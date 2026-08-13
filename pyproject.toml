@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "A production-style, local-first MLOps system for customer-support ticket routing."
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
-license = { text = "License selection pending" }
+license = "MIT"
 authors = [
   { name = "Vijay Pratap Singh" },
 ]
