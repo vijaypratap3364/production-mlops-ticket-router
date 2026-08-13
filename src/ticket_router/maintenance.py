@@ -8,6 +8,7 @@ from pathlib import Path
 CACHE_DIRECTORIES = (
     ".mypy_cache",
     ".pytest_cache",
+    ".pytest-run",
     ".pytest-tmp",
     ".test-output",
     ".test-output-cache",
