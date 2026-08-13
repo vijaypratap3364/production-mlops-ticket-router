@@ -1,5 +1,33 @@
 # Final production-readiness audit
 
+## Release-remediation follow-up
+
+Follow-up date: 2026-08-13 (America/Chicago)
+
+The audit below is retained as the immutable evidence snapshot that blocked the first release
+attempt. Its four failed items have since been remediated in the release-candidate changes:
+
+- CI no longer combines `UV_FROZEN=true` with `uv sync --locked`, and a workflow contract test
+  prevents that invalid combination from returning.
+- The locked environment now contains `cryptography 50.0.0`, `GitPython 3.1.59`, `MLflow 3.15.1`,
+  and `PyArrow 24.0.0`. `pip-audit` reports no known vulnerability in the installed environment.
+- Real `ticket_router.data.prepare` reruns now accept serialization-only selected-class report drift
+  after verifying the normalized-data hash, configuration hash, label mapping, selected counts, and
+  every sealed output hash. The audited split-manifest hash remained byte-for-byte unchanged.
+- API and worker images receive an explicit commit/dirty identity, and a new release-attestation
+  gate ties a clean release commit to the immutable champion while preserving the honest historical
+  `git_commit=unavailable` value. The gate does not reevaluate test data or move an MLflow alias.
+
+Local release-candidate evidence is: 227 tests passed and 2 intentionally skipped with 80.38%
+branch coverage; Ruff and mypy passed; all four project images built and ran as non-root; migrations
+reached `20260807_0002 (head)`; the champion-backed Compose smoke test passed; candidate and champion
+both remained at version 1; deterministic planted drift was detected as `critical`; and the installed
+dependency scan returned `No known vulnerabilities found`.
+
+The tag remains withheld until GitHub Actions succeeds for the exact commit containing this
+follow-up. Once that condition is met, the attestation command may run and `v1.0.0` may point to that
+same green commit without rewriting this audit history.
+
 Audit date: 2026-08-12 (America/Chicago), with commands completing on 2026-08-13 UTC  
 Audited commit: `10bffa30063268a52f10f7f0204d298203986e97` on `main`  
 Repository: `vijaypratap3364/production-mlops-ticket-router`
