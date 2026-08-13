@@ -21,7 +21,7 @@ FROM python:3.12-slim-bookworm AS runtime
 
 ARG SOURCE_GIT_COMMIT=""
 ARG SOURCE_GIT_DIRTY="false"
-ENV PATH=/app/.venv/bin:$PATH \
+ENV PATH=/opt/ticket-router-venv/bin:$PATH \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     SOURCE_GIT_COMMIT=$SOURCE_GIT_COMMIT \
@@ -35,7 +35,7 @@ RUN apt-get update \
     && chown -R ticket-router:ticket-router /app
 WORKDIR /app
 
-COPY --from=builder --chown=ticket-router:ticket-router /app/.venv /app/.venv
+COPY --from=builder --chown=ticket-router:ticket-router /app/.venv /opt/ticket-router-venv
 COPY --chown=ticket-router:ticket-router configs ./configs
 COPY --chown=ticket-router:ticket-router migrations ./migrations
 COPY --chown=ticket-router:ticket-router scripts ./scripts

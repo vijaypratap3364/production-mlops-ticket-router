@@ -49,6 +49,7 @@ def test_ci_workflow_has_required_quality_and_build_boundaries() -> None:
         workflow.get("env", {}).get("UV_FROZEN") == "true"
         and any("uv sync --locked" in command for command in commands)
     )
+    assert str(workflow["env"]["UV_PROJECT_ENVIRONMENT"]).startswith("${{ runner.temp }}")
 
 
 def test_ci_uses_disposable_postgres_and_does_not_run_full_training() -> None:

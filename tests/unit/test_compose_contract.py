@@ -87,6 +87,12 @@ def test_lineage_capable_images_receive_explicit_source_identity() -> None:
         assert "SOURCE_GIT_COMMIT=$SOURCE_GIT_COMMIT" in dockerfile
 
 
+def test_worker_virtual_environment_is_outside_application_working_directory() -> None:
+    dockerfile = Path("docker/worker.Dockerfile").read_text(encoding="utf-8")
+    assert "PATH=/opt/ticket-router-venv/bin:$PATH" in dockerfile
+    assert "/app/.venv /opt/ticket-router-venv" in dockerfile
+
+
 def test_dashboard_image_disables_usage_telemetry() -> None:
     dockerfile = Path("docker/dashboard.Dockerfile").read_text(encoding="utf-8")
 

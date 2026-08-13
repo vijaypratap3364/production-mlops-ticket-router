@@ -15,6 +15,9 @@ permissions:
 
 env:
   UV_PYTHON: "3.12"
+  # NLTK rejects dependencies located below the current working directory as
+  # potential import-shadowing attacks. Keep the CI environment outside checkout.
+  UV_PROJECT_ENVIRONMENT: ${{ runner.temp }}/ticket-router-venv
 
 jobs:
   lint:
