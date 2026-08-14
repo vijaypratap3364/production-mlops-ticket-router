@@ -24,7 +24,7 @@ uv run python -m ticket_router.benchmarking
 ```
 
 The same commands work in Bash. `make model-contract`, `make load-test`,
-`make operational-validation-disruptions`, and `make benchmark` are convenience aliases. The
+`make docker-operational-validation-disruptions`, and `make benchmark` are convenience aliases. The
 disruption command intentionally stops and recovers only this Compose project's MLflow and
 PostgreSQL services and restarts its API. Run it only on a disposable local development stack and
 inspect `docker compose ps` afterward.

@@ -36,6 +36,15 @@ Use the portable `uv` commands as the source of truth; Makefile targets are conv
 Run narrower tests while iterating, then the full gate before the final commit. Inspect
 `git diff --check`, the staged diff, and ignored files before every commit.
 
+## Local runtime constraints
+
+- Use the native Windows + `uv`/Python workflow by default.
+- Do not start Docker Desktop or run any `docker` or `docker compose` command unless the user
+  explicitly requests Docker verification in the active task.
+- Keep Dockerfiles, Compose configuration, container tests, and deployment documentation intact;
+  they are opt-in deployment assets, not prerequisites for normal development or quality checks.
+- GitHub-hosted CI may build containers remotely. That does not authorize local Docker execution.
+
 ## Evidence and safety rules
 
 - Never fabricate metrics, benchmark numbers, command output, test results, or deployment status.

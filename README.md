@@ -210,16 +210,37 @@ dataset. See [data source](docs/data-source.md), [data card](docs/data-card.md),
 
 - Git.
 - Python 3.12 and [`uv`](https://docs.astral.sh/uv/getting-started/installation/) for host workflows.
-- Docker Desktop or another Compose-compatible local engine for the complete stack.
+- Docker Desktop or another Compose-compatible local engine only for optional full-stack verification.
 - Enough local disk and memory for PostgreSQL, MLflow, model artifacts, and full-data training.
 
 No service in this repository requires payment. GitHub Actions is optional; every core check has a
 local command.
 
-## Quick start with Docker Compose
+## Default lightweight setup (Windows + uv)
+
+Normal development is native Python and never starts Docker Desktop or invokes Compose. In
+PowerShell:
+
+```powershell
+uv python install 3.12
+uv sync --locked --all-groups
+Copy-Item .env.example .env
+uv run python -c "import ticket_router; print(ticket_router.__version__)"
+uv run ruff format --check .
+uv run ruff check .
+uv run mypy src tests scripts load_tests
+uv run pytest
+```
+
+`make`, `make install`, `make check`, `make migrate`, `make api-dev`, and `make dashboard-dev` are
+also native-only. Running bare `make` prints the native and opt-in command groups. Container actions
+are deliberately named `docker-*` and run only when explicitly selected.
+
+## Optional full-stack Docker Compose
 
 This is the most complete reviewer path. The first bootstrap downloads the public dataset and runs
-CPU-oriented training, so it requires network access and can take substantial time.
+CPU-oriented training, so it requires network access and can take substantial time and memory. It is
+not required for ordinary development and no native command starts it automatically.
 
 ```bash
 git clone https://github.com/vijaypratap3364/production-mlops-ticket-router.git
@@ -244,7 +265,7 @@ On Windows PowerShell, replace `cp .env.example .env` with
 `Copy-Item .env.example .env`. Read [deployment](docs/deployment.md) and the detailed
 [Docker runbook](docs/docker.md) before bootstrap or reset operations.
 
-## Local non-Docker setup
+## Native application services
 
 Install the locked Python environment:
 

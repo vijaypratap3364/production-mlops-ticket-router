@@ -9,6 +9,7 @@ from scripts.operational_validation import (
     _baseline_http_scenarios,
     _insufficient_monitoring_scenario,
     _missing_champion_scenario,
+    _parser,
 )
 
 
@@ -65,3 +66,9 @@ def test_operational_fixture_contains_no_ticket_payload_in_results() -> None:
 
     assert "subject" not in serialized
     assert "body" not in serialized
+
+
+def test_compose_disruptions_are_disabled_by_default() -> None:
+    args = _parser().parse_args([])
+
+    assert args.run_compose_disruptions is False

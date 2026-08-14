@@ -1,11 +1,17 @@
 UV ?= uv
 DOCKER_COMPOSE ?= docker compose
+.DEFAULT_GOAL := help
 SOURCE_GIT_COMMIT ?= $(shell git rev-parse HEAD)
 SOURCE_GIT_DIRTY ?= $(if $(strip $(shell git status --porcelain)),true,false)
 export SOURCE_GIT_COMMIT
 export SOURCE_GIT_DIRTY
 
-.PHONY: install format format-check lint typecheck test test-unit test-integration test-e2e build-package check download-data normalize-data analyze-data prepare-data train-baselines experiment-candidates evaluate-final recover-final-registration promote-candidate attest-release api-dev dashboard-dev db-upgrade db-downgrade db-revision test-db-integration build-monitoring-reference monitor retrain simulate-drift flow-ingest flow-train flow-monitor flow-retraining prefect-deploy fixture-flow benchmark model-contract load-test operational-validation operational-validation-disruptions docker-build docker-up docker-up-orchestration docker-down docker-logs docker-status docker-smoke docker-monitor docker-retrain migrate bootstrap clean
+.PHONY: help install format format-check lint typecheck test test-unit test-integration test-e2e build-package check download-data normalize-data analyze-data prepare-data train-baselines experiment-candidates evaluate-final recover-final-registration promote-candidate attest-release api-dev dashboard-dev db-upgrade db-downgrade db-revision migrate test-db-integration build-monitoring-reference monitor retrain simulate-drift flow-ingest flow-train flow-monitor flow-retraining prefect-deploy fixture-flow benchmark model-contract load-test operational-validation docker-build docker-up docker-up-orchestration docker-down docker-logs docker-status docker-migrate docker-bootstrap docker-smoke docker-monitor docker-retrain docker-operational-validation-disruptions clean
+
+help:
+	@echo "Native development (default): install, check, test, api-dev, dashboard-dev, migrate"
+	@echo "Opt-in Docker verification: docker-build, docker-up, docker-migrate, docker-bootstrap, docker-smoke"
+	@echo "Docker targets are never invoked by native development targets."
 
 install:
 	$(UV) sync --locked --all-groups
@@ -80,6 +86,8 @@ dashboard-dev:
 db-upgrade:
 	$(UV) run alembic upgrade head
 
+migrate: db-upgrade
+
 db-downgrade:
 	$(UV) run alembic downgrade -1
 
@@ -132,9 +140,6 @@ load-test:
 operational-validation:
 	$(UV) run python scripts/operational_validation.py
 
-operational-validation-disruptions:
-	$(UV) run python scripts/operational_validation.py --run-compose-disruptions
-
 docker-build:
 	$(DOCKER_COMPOSE) build api dashboard mlflow prefect-worker
 
@@ -153,10 +158,10 @@ docker-logs:
 docker-status:
 	$(DOCKER_COMPOSE) ps
 
-migrate:
+docker-migrate:
 	$(DOCKER_COMPOSE) run --rm migrate
 
-bootstrap:
+docker-bootstrap:
 	$(DOCKER_COMPOSE) --profile bootstrap run --rm bootstrap
 	$(DOCKER_COMPOSE) restart api
 
@@ -168,6 +173,9 @@ docker-monitor:
 
 docker-retrain:
 	$(DOCKER_COMPOSE) --profile orchestration exec prefect-worker python -m ticket_router.orchestration retraining
+
+docker-operational-validation-disruptions:
+	$(UV) run python scripts/operational_validation.py --run-compose-disruptions
 
 clean:
 	$(UV) run python scripts/clean.py

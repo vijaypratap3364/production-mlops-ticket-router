@@ -5,6 +5,11 @@ artifact store, model API, cloud account, free trial, or paid service. All publi
 `127.0.0.1` and are unavailable from other machines unless the operator deliberately changes the
 configuration.
 
+This runbook is strictly opt-in. Normal Windows development, `make`, `make check`, and the canonical
+`uv` quality commands neither start Docker Desktop nor invoke Compose. Use the Docker commands below
+only after deliberately choosing full-stack verification and confirming the machine has sufficient
+resources.
+
 ## Services and profiles
 
 The default core stack contains PostgreSQL, MLflow, the one-shot Alembic migration service, FastAPI,
@@ -88,7 +93,8 @@ docker compose logs --tail=200 postgres mlflow migrate api dashboard
 ```
 
 Equivalent convenience commands are `make docker-build`, `make docker-up`, `make docker-status`,
-and `make docker-logs`.
+`make docker-logs`, and `make docker-migrate`. All Docker-backed Make targets use the `docker-`
+prefix.
 
 ## Explicit initial bootstrap
 
@@ -103,7 +109,7 @@ docker compose --profile bootstrap run --rm bootstrap
 docker compose restart api
 ```
 
-`make bootstrap` performs those two commands. The bootstrap first checks registry aliases. It exits
+`make docker-bootstrap` performs those two commands. The bootstrap first checks registry aliases. It exits
 without retraining when a champion already exists; when only a gated candidate exists, it runs the
 separate `promote --approve` command. If final evaluation was interrupted after the one-time test
 audit was opened, bootstrap invokes the post-evaluation recovery command and reuses the existing

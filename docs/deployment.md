@@ -4,6 +4,11 @@ The supported deployment is a zero-cost, localhost-only Docker Compose stack. It
 conscious—non-root images, health-gated startup, migrations, persistence, readiness, structured
 errors, and explicit bootstrap—but it is not a public production deployment.
 
+Deployment is opt-in and separate from the default native Windows + `uv` workflow. No install,
+quality, test, migration, API-development, or dashboard-development command starts Docker Desktop or
+invokes Compose. Docker verification should be selected explicitly only on a machine with adequate
+resources; Docker-backed Make targets use the `docker-` prefix.
+
 ## Services
 
 | Service | Responsibility | Local address |
