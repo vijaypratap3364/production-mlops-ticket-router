@@ -18,28 +18,36 @@ attempt. Its four failed items have since been remediated in the release-candida
   gate ties a clean release commit to the immutable champion while preserving the honest historical
   `git_commit=unavailable` value. The gate does not reevaluate test data or move an MLflow alias.
 
-Local release-candidate evidence is: 227 tests passed and 2 intentionally skipped with 80.38%
-branch coverage; Ruff and mypy passed; all four project images built and ran as non-root; migrations
-reached `20260807_0002 (head)`; the champion-backed Compose smoke test passed; candidate and champion
-both remained at version 1; deterministic planted drift was detected as `critical`; and the installed
-dependency scan returned `No known vulnerabilities found`.
+Current native release-candidate evidence is: 232 tests passed and 2 intentionally skipped with
+80.38% branch coverage; Ruff and mypy passed; pre-commit passed; the Python source distribution and
+wheel built; and the installed dependency scan returned `No known vulnerabilities found`. The
+earlier Docker, migration, champion-backed smoke, registry, and monitoring evidence below remains
+historical evidence and was not rerun after the laptop switched to the lightweight native workflow.
 
-The tag remains withheld until GitHub Actions succeeds for the exact commit containing this
-follow-up. Once that condition is met, the attestation command may run and `v1.0.0` may point to that
-same green commit without rewriting this audit history.
+GitHub Actions run
+[`31761752043`](https://github.com/vijaypratap3364/production-mlops-ticket-router/actions/runs/31761752043)
+succeeded for native-workflow remediation commit
+`ac6062b6aee087bc90e8ee42118979d5004a2ad9`. Package build, Ruff, mypy, unit/coverage,
+PostgreSQL integration, and the four GitHub-hosted container-build jobs all passed. Any later release
+commit must pass its own exact-commit CI run before tagging.
+
+All four original **Failed** findings are resolved. The tag is still withheld because the required
+champion release attestation has not executed: `http://127.0.0.1:5000/health` was unavailable during
+the native-only follow-up. The local SQLite MLflow store is not equivalent; it contains a different
+run with only the `candidate` alias. The audit does not create or move an alias to fabricate release
+evidence, and it does not start Docker without explicit user authorization.
 
 Audit date: 2026-08-12 (America/Chicago), with commands completing on 2026-08-13 UTC  
 Audited commit: `10bffa30063268a52f10f7f0204d298203986e97` on `main`  
 Repository: `vijaypratap3364/production-mlops-ticket-router`
 
-## Readiness summary
+## Readiness summary at the original audited commit
 
-The repository is a strong, working local portfolio system, but it is **not ready for a `v1.0.0`
-tag**. The champion-backed Compose stack, API, PostgreSQL persistence, MLflow registry, Prefect,
-Streamlit, monitoring, tests, and documented benchmark all work locally. Four release-blocking gaps
-remain: the current GitHub Actions run is red, the installed dependency graph has known
-vulnerabilities, prepared-data regeneration is not idempotent against the sealed lineage, and the
-registered champion has no Git commit in its Stage 7 lineage.
+At audited commit `10bffa30063268a52f10f7f0204d298203986e97`, the repository was a strong,
+working local portfolio system but was not ready for a `v1.0.0` tag. The champion-backed Compose
+stack, API, PostgreSQL persistence, MLflow registry, Prefect, Streamlit, monitoring, tests, and
+documented benchmark worked locally. The four release-blocking gaps identified then are retained
+below as historical evidence and are closed by the release-remediation follow-up above.
 
 No model was retrained and no MLflow alias was moved during this audit. Existing PostgreSQL and
 MLflow named volumes were preserved. The Compose services were shut down cleanly at the end.
@@ -202,6 +210,11 @@ These values describe one local Windows machine, not a production SLO or public 
 
 ## Failed
 
+There are no unresolved code, dependency, reproducibility, lineage-design, or CI findings from the
+original **Failed** section. The subsections below describe the immutable audit snapshot; each was
+resolved by the release-remediation changes summarized at the top of this report. Release execution
+itself remains pending under **Not verified**.
+
 ### Current GitHub Actions run is red
 
 Read-only GitHub inspection found the CI run for the audited commit failed:
@@ -285,38 +298,32 @@ the measured model, but it violates the intended complete model-to-code lineage 
 - The full conditional-retraining path was not executed against newly approved delayed labels. Unit
   tests verify new dataset versioning, candidate registration, and no automatic champion promotion;
   the live database had zero retraining-run records and insufficient labels.
-- GitHub Actions after correcting the frozen/locked conflict is not verified; the repository was not
-  modified or pushed as part of this audit.
+- GitHub Actions remediation is now verified by successful run `31761752043` for commit
+  `ac6062b6aee087bc90e8ee42118979d5004a2ad9`. Any subsequent release commit still requires its own
+  green run.
 - The release workflow has not been executed for a tag.
-- Vulnerability exploitability in this application was not manually assessed; the audit reports the
-  scanner findings conservatively.
+- The champion release-attestation command has not succeeded. The required audited registry was
+  unavailable at `http://127.0.0.1:5000`; the native local MLflow store has different lineage and was
+  deliberately not treated as equivalent.
 - No public deployment, TLS termination, authentication, multi-host load, disaster recovery,
   backup/restore, or long-duration soak test was performed. The system remains a local, zero-cost
   portfolio deployment.
 
 ## Recommended future improvements
 
-1. Fix CI by using either `UV_FROZEN=true` with `uv sync --all-groups`, or `uv sync --locked` without
-   `UV_FROZEN`; then require a green current-commit run.
-2. Upgrade `cryptography` to at least 50.0.0 and GitPython to at least 3.1.58 through compatible
-   direct/transitive constraints, update `uv.lock`, rerun all checks and images, and require a clean
-   vulnerability scan.
-3. Make selected-class report serialization/hash generation deterministic across analysis reruns, or
-   version its semantic payload separately from volatile report metadata. Rehearse preparation in a
-   disposable workspace before replacing any sealed artifact.
-4. Inject the source commit into container builds/runtime through a build argument or version file so
-   MLflow run, registered model version, test-access audit, and promotion audit always record it.
-5. Add a Prefect-worker healthcheck and investigate the MLflow memory footprint under the local
+1. Add a Prefect-worker healthcheck and investigate the MLflow memory footprint under the local
    Docker limit.
-6. Keep synthetic smoke/load events separate from representative monitoring windows; collect at least
+2. Keep synthetic smoke/load events separate from representative monitoring windows; collect at least
    50 reviewed feedback labels before interpreting delayed-label quality.
-7. Add authentication, TLS, authorization, and a reverse proxy only if the stack is ever exposed
+3. Add authentication, TLS, authorization, and a reverse proxy only if the stack is ever exposed
    beyond loopback.
-8. Perform and document one disposable clean-machine bootstrap rehearsal, including ingestion,
+4. Perform and document one disposable clean-machine bootstrap rehearsal, including ingestion,
    migrations, candidate registration, explicit initial promotion, smoke, monitoring reference, and
    teardown.
-9. Raise targeted coverage in dashboard rendering, orchestration branches, and external-service error
+5. Raise targeted coverage in dashboard rendering, orchestration branches, and external-service error
    paths without adding assertion-free tests.
+6. Update pinned GitHub Actions before their Node.js 20 compatibility period ends; the current green
+   run emitted advance deprecation warnings while GitHub forced those actions onto Node.js 24.
 
-Suggested release tag: **none**. Do not create `v1.0.0` until all items in **Failed** are resolved and
-the current GitHub Actions run is green.
+Suggested release tag after the remaining runtime gate passes: **`v1.0.0`**. Do not create it until
+the champion release attestation succeeds and CI is green for the exact commit being tagged.

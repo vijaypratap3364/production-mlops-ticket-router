@@ -1,5 +1,23 @@
 # README command verification
 
+## 2026-08-13 native-workflow and release-gate follow-up
+
+- No Docker Desktop startup or local `docker`/`docker compose` command was performed.
+- Repository inspection found Compose execution only in explicit `docker-*` Make targets and the
+  opt-in `--run-compose-disruptions` operational-validation branch. There is no `.vscode`, `.agents`,
+  `.codex`, PowerShell, batch, or startup hook that launches Docker.
+- `uv sync --locked --all-groups`, Ruff format/check, mypy across `src tests scripts load_tests`, and
+  pre-commit completed successfully.
+- `uv run pytest` completed with 232 passed, 2 intentionally skipped, and 80.38% branch coverage.
+- `uv build` created the source distribution and wheel. `uv build --locked` is unsupported by the
+  installed uv version and is not the documented build command.
+- GitHub Actions run `31761752043` succeeded for commit
+  `ac6062b6aee087bc90e8ee42118979d5004a2ad9`, including remote package, quality, PostgreSQL
+  integration, and four container-build jobs.
+- The localhost MLflow health probe was unavailable. Native `mlruns/mlflow.db` contained a different
+  version-1 run under `candidate` only, so release attestation and `v1.0.0` creation remained blocked
+  rather than substituting mismatched lineage.
+
 This record distinguishes commands executed during the Stage 16 documentation pass from commands
 validated through non-mutating help/contracts or prior stage evidence. It prevents a reviewer guide
 from implying that every expensive or destructive lifecycle command was rerun.
